@@ -1,0 +1,5 @@
+# ninja log v7
+3	15	1788304753326864140	CMakeFiles/cortex_m_firmware.elf.dir/src/soma.s.obj	5d214594bea35ae
+3	15	1788304753328213034	CMakeFiles/cortex_m_firmware.elf.dir/src/startup.s.obj	2e957859d3071548
+2	72	1788304753325864138	CMakeFiles/cortex_m_firmware.elf.dir/src/main.c.obj	9d63e3a976cac47
+73	118	1788304753396864285	cortex_m_firmware.elf	3e07ac59e205d574

@@ -1,0 +1,70 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "QEMU Simulator (ARM Cortex-M)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "qemu",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/build/cortex_m_firmware.elf",
+            "runToEntryPoint": "main",
+            "preLaunchTask": "CMake: Build",
+            "cpu": "cortex-m3",
+            "machine": "lm3s6965evb",
+            "gdbPath": "arm-none-eabi-gdb",
+            "showDevDebugOutput": "none"
+        },
+        {
+            "name": "STM32F4 (ST-Link / Nucleo / Discovery)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/build/cortex_m_firmware.elf",
+            "interface": "swd",
+            "runToEntryPoint": "main",
+            "preLaunchTask": "CMake: Build",
+            "configFiles": [
+                "interface/stlink.cfg",
+                "target/stm32f4x.cfg"
+            ],
+            "gdbPath": "arm-none-eabi-gdb",
+            "showDevDebugOutput": "none"
+        },
+        {
+            "name": "STM32F1 (ST-Link / BluePill)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/build/cortex_m_firmware.elf",
+            "interface": "swd",
+            "runToEntryPoint": "main",
+            "preLaunchTask": "CMake: Build",
+            "configFiles": [
+                "interface/stlink.cfg",
+                "target/stm32f1x.cfg"
+            ],
+            "gdbPath": "arm-none-eabi-gdb",
+            "showDevDebugOutput": "none"
+        },
+        {
+            "name": "CMSIS-DAP Generic (ARM Cortex-M)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/build/cortex_m_firmware.elf",
+            "interface": "swd",
+            "runToEntryPoint": "main",
+            "preLaunchTask": "CMake: Build",
+            "configFiles": [
+                "interface/cmsis-dap.cfg",
+                "target/stm32f4x.cfg"
+            ],
+            "gdbPath": "arm-none-eabi-gdb",
+            "showDevDebugOutput": "none"
+        }
+    ]
+}

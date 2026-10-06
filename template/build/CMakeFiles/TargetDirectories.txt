@@ -1,0 +1,3 @@
+/home/teteus/Documents/UTFPR/2026.2/Sistemas Embarcados/template/build/CMakeFiles/cortex_m_firmware.elf.dir
+/home/teteus/Documents/UTFPR/2026.2/Sistemas Embarcados/template/build/CMakeFiles/edit_cache.dir
+/home/teteus/Documents/UTFPR/2026.2/Sistemas Embarcados/template/build/CMakeFiles/rebuild_cache.dir
