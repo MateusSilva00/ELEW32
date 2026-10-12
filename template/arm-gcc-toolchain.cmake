@@ -2,38 +2,23 @@
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_PROCESSOR arm)
 
-# Find compilers in system PATH
-find_program(ARM_GCC_C arm-none-eabi-gcc)
-find_program(ARM_GCC_CXX arm-none-eabi-g++)
-find_program(ARM_GCC_OBJCOPY arm-none-eabi-objcopy)
-find_program(ARM_GCC_OBJDUMP arm-none-eabi-objdump)
-find_program(ARM_GCC_SIZE arm-none-eabi-size)
+# Falhar na configuracao se alguma ferramenta ARM estiver ausente do PATH.
+find_program(ARM_GCC_C arm-none-eabi-gcc REQUIRED)
+find_program(ARM_GCC_CXX arm-none-eabi-g++ REQUIRED)
+find_program(ARM_GCC_OBJCOPY arm-none-eabi-objcopy REQUIRED)
+find_program(ARM_GCC_OBJDUMP arm-none-eabi-objdump REQUIRED)
+find_program(ARM_GCC_SIZE arm-none-eabi-size REQUIRED)
 
-if(ARM_GCC_C)
-    set(CMAKE_C_COMPILER ${ARM_GCC_C})
-else()
-    set(CMAKE_C_COMPILER arm-none-eabi-gcc)
-endif()
+set(CMAKE_C_COMPILER "${ARM_GCC_C}")
+set(CMAKE_CXX_COMPILER "${ARM_GCC_CXX}")
+set(CMAKE_ASM_COMPILER "${ARM_GCC_C}")
+set(CMAKE_OBJCOPY "${ARM_GCC_OBJCOPY}")
+set(CMAKE_OBJDUMP "${ARM_GCC_OBJDUMP}")
+set(CMAKE_SIZE "${ARM_GCC_SIZE}")
 
-if(ARM_GCC_CXX)
-    set(CMAKE_CXX_COMPILER ${ARM_GCC_CXX})
-else()
-    set(CMAKE_CXX_COMPILER arm-none-eabi-g++)
-endif()
-
-set(CMAKE_ASM_COMPILER ${CMAKE_C_COMPILER})
-
-if(ARM_GCC_OBJCOPY)
-    set(CMAKE_OBJCOPY ${ARM_GCC_OBJCOPY})
-endif()
-
-if(ARM_GCC_SIZE)
-    set(CMAKE_SIZE ${ARM_GCC_SIZE})
-endif()
-
-# Skip compiler checks when cross-compiling
-set(CMAKE_C_COMPILER_WORKS 1)
-set(CMAKE_CXX_COMPILER_WORKS 1)
+# Verificar o compilador sem tentar vincular um programa de desktop.
+# O firmware final sera vinculado com o startup e o linker script do projeto.
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)

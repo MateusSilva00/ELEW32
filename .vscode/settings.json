@@ -1,3 +1,10 @@
 {
-    "cmake.sourceDirectory": "D:/Faculdade/SE/ELEW32/template"
+    "cmake.sourceDirectory": "${workspaceFolder}/template",
+    "cmake.buildDirectory": "${workspaceFolder}/out/build/windows",
+    "cmake.generator": "Ninja",
+    "cmake.configureSettings": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true
+    },
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
 }

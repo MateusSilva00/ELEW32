@@ -1,0 +1,34 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "CMake: Configure",
+            "type": "process",
+            "command": "cmake",
+            "args": [
+                "-S", "${workspaceFolder}/template",
+                "-B", "${workspaceFolder}/out/build/windows",
+                "-G", "Ninja",
+                "-DCMAKE_BUILD_TYPE=Debug",
+                "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "CMake: Build",
+            "type": "process",
+            "command": "cmake",
+            "args": ["--build", "${workspaceFolder}/out/build/windows"],
+            "dependsOn": "CMake: Configure",
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "CMake: Clean",
+            "type": "process",
+            "command": "cmake",
+            "args": ["--build", "${workspaceFolder}/out/build/windows", "--target", "clean"],
+            "problemMatcher": []
+        }
+    ]
+}

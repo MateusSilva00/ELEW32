@@ -29,7 +29,7 @@ add_link_options(
     -Wl,--print-memory-usage
     -specs=nano.specs
     -specs=nosys.specs
-    -T${CMAKE_CURRENT_SOURCE_DIR}/linker.ld
+    "-T${CMAKE_CURRENT_SOURCE_DIR}/linker.ld"
 )
 
 # Include directories
@@ -45,8 +45,9 @@ add_executable(${PROJECT_NAME}.elf ${SOURCES})
 
 # Custom post-build targets to generate .bin, .hex, and print size
 add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
-    COMMAND arm-none-eabi-objcopy -O ihex $<TARGET_FILE:${PROJECT_NAME}.elf> ${PROJECT_NAME}.hex
-    COMMAND arm-none-eabi-objcopy -O binary $<TARGET_FILE:${PROJECT_NAME}.elf> ${PROJECT_NAME}.bin
-    COMMAND arm-none-eabi-size $<TARGET_FILE:${PROJECT_NAME}.elf>
+    COMMAND "${CMAKE_OBJCOPY}" -O ihex $<TARGET_FILE:${PROJECT_NAME}.elf> ${PROJECT_NAME}.hex
+    COMMAND "${CMAKE_OBJCOPY}" -O binary $<TARGET_FILE:${PROJECT_NAME}.elf> ${PROJECT_NAME}.bin
+    COMMAND "${CMAKE_SIZE}" $<TARGET_FILE:${PROJECT_NAME}.elf>
     COMMENT "Building Hex, Bin and printing size info"
+    VERBATIM
 )
