@@ -34,7 +34,7 @@ de HAL/RCC. Os demais cabecalhos incluidos sao dependencias de compilacao;
 somente os fontes explicitados no CMake entram no build. USB Device inclui
 o nucleo (`usbd_core`, `usbd_ctlreq`, `usbd_ioreq`) e a classe CDC.
 `HAL_GetTick()` consulta `millis()` da aplicacao: nao ha outro contador ativo.
-Configuracoes e adaptadores estao em `template/inc` e `template/src`.
+Configuracoes e adaptadores estao em `inc/` e `src/` de cada questao (atualmente `atividade3/questao_a/`).
 
 Pacotes oficiais utilizados na importacao (os arquivos extraidos foram
 copiados sem alteracao; nao ha download durante a compilacao):

@@ -2,69 +2,144 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Button: Tests",
+            "label": "Questao (a): Button Tests",
             "type": "process",
             "command": "powershell",
-            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/test-button.ps1"],
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/scripts/test-button.ps1"
+            ],
             "problemMatcher": []
         },
         {
             "label": "USB: Serial Monitor",
             "type": "process",
             "command": "powershell",
-            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/serial-monitor.ps1"],
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/scripts/serial-monitor.ps1"
+            ],
             "problemMatcher": []
         },
         {
             "label": "DFU: Setup",
             "type": "process",
             "command": "powershell",
-            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/setup-dfu.ps1"],
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/scripts/setup-dfu.ps1"
+            ],
             "problemMatcher": []
         },
         {
             "label": "DFU: List",
             "type": "process",
             "command": "powershell",
-            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/dfu.ps1", "-Action", "List"],
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/scripts/dfu.ps1",
+                "-Action",
+                "List"
+            ],
             "problemMatcher": []
         },
         {
             "label": "DFU: Flash and Verify",
             "type": "process",
             "command": "powershell",
-            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/dfu.ps1", "-Action", "Flash"],
-            "dependsOn": "CMake: Build",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/scripts/project.ps1",
+                "-Question",
+                "${input:question}",
+                "-Action",
+                "Flash"
+            ],
             "problemMatcher": []
         },
         {
             "label": "CMake: Configure",
             "type": "process",
-            "command": "cmake",
+            "command": "powershell",
             "args": [
-                "-S", "${workspaceFolder}/template",
-                "-B", "${workspaceFolder}/out/build/windows",
-                "-G", "Ninja",
-                "-DCMAKE_BUILD_TYPE=Debug",
-                "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/scripts/project.ps1",
+                "-Question",
+                "${input:question}",
+                "-Action",
+                "Configure"
             ],
             "problemMatcher": []
         },
         {
             "label": "CMake: Build",
             "type": "process",
-            "command": "cmake",
-            "args": ["--build", "${workspaceFolder}/out/build/windows"],
-            "dependsOn": "CMake: Configure",
-            "group": { "kind": "build", "isDefault": true },
+            "command": "powershell",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/scripts/project.ps1",
+                "-Question",
+                "${input:question}",
+                "-Action",
+                "Build"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
             "problemMatcher": "$gcc"
         },
         {
             "label": "CMake: Clean",
             "type": "process",
-            "command": "cmake",
-            "args": ["--build", "${workspaceFolder}/out/build/windows", "--target", "clean"],
+            "command": "powershell",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/scripts/project.ps1",
+                "-Question",
+                "${input:question}",
+                "-Action",
+                "Clean"
+            ],
             "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id": "question",
+            "type": "pickString",
+            "description": "Questao da Atividade 3 (b, c e d ainda pendentes)",
+            "options": [
+                "a",
+                "b",
+                "c",
+                "d"
+            ],
+            "default": "a"
         }
     ]
 }

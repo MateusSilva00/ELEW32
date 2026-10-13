@@ -1,13 +1,13 @@
 param(
     [ValidateSet('List', 'Flash')]
-    [string]$Action = 'List'
+    [string]$Action = 'List',
+    [ValidateSet('a', 'b', 'c', 'd')]
+    [string]$Question
 )
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $dfuUtil = Join-Path $projectRoot 'out/tools/dfu-util-0.11-binaries/win64/dfu-util.exe'
-$firmware = Join-Path $projectRoot 'out/build/windows/cortex_m_firmware.bin'
-$readback = Join-Path $projectRoot 'out/build/windows/dfu-readback.bin'
 
 if (-not (Test-Path -LiteralPath $dfuUtil)) {
     throw 'Execute a tarefa DFU: Setup antes de usar o gravador USB.'
@@ -19,9 +19,17 @@ if ($Action -eq 'List') {
     exit $LASTEXITCODE
 }
 
-if (-not (Test-Path -LiteralPath $firmware)) {
-    throw 'Firmware ausente. Compile com CMake: Build antes de gravar.'
+if (-not $Question) { throw 'Informe -Question a, b, c ou d para selecionar o firmware.' }
+$Question = $Question.ToLowerInvariant()
+if (-not (Test-Path -LiteralPath (Join-Path $projectRoot "atividade3/questao_$Question/CMakeLists.txt"))) {
+    throw "A questao ($Question) ainda nao possui firmware implementado."
 }
+$firmware = Join-Path $projectRoot "out/build/questao_$Question/questao_$Question.bin"
+$readback = Join-Path $projectRoot "out/build/questao_$Question/dfu-readback.bin"
+if (-not (Test-Path -LiteralPath $firmware)) {
+    throw 'Firmware ausente. Compile a questao selecionada com scripts/project.ps1 antes de gravar.'
+}
+Write-Host "Gravando questao ($Question): $firmware"
 $imageBytes = [IO.File]::ReadAllBytes($firmware)
 if ($imageBytes.Length -lt 8 -or $imageBytes.Length -gt 524288) {
     throw 'Tamanho de firmware invalido para a STM32F411CEU6.'

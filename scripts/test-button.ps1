@@ -20,15 +20,15 @@ if (-not $Compiler) {
 if (-not (Test-Path -LiteralPath $Compiler)) {
     throw 'Execute este script com -Setup para preparar o TCC, ou informe -Compiler com o caminho do GCC/Clang/TCC nativo.'
 }
-$testDirectory = Join-Path $projectRoot 'out/tests'
+$testDirectory = Join-Path $projectRoot 'out/tests/questao_a'
 New-Item -ItemType Directory -Force -Path $testDirectory | Out-Null
 $testExecutable = Join-Path $testDirectory 'test-button.exe'
 & $Compiler -std=c11 -Wall -Wextra -Werror `
-    -include (Join-Path $projectRoot 'tests/compiler_compat.h') `
-    -I (Join-Path $projectRoot 'template/inc') `
-    (Join-Path $projectRoot 'tests/test_button.c') `
-    (Join-Path $projectRoot 'template/src/button_logic.c') `
-    (Join-Path $projectRoot 'template/src/button_report.c') `
+    -include (Join-Path $projectRoot 'atividade3/questao_a/tests/compiler_compat.h') `
+    -I (Join-Path $projectRoot 'atividade3/questao_a/inc') `
+    (Join-Path $projectRoot 'atividade3/questao_a/tests/test_button.c') `
+    (Join-Path $projectRoot 'atividade3/questao_a/src/button_logic.c') `
+    (Join-Path $projectRoot 'atividade3/questao_a/src/button_report.c') `
     -o $testExecutable
 if ($LASTEXITCODE -ne 0) { throw 'Falha ao compilar os testes C.' }
 & $testExecutable

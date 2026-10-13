@@ -37,18 +37,18 @@ presumido, mas não constituem medição instrumental dos clocks.
 
 Abra **ELEW32** como pasta do VS Code. Instale ARM GNU Toolchain, CMake e Ninja
 no Windows e deixe-os no PATH; use as extensões C/C++ e CMake Tools. As versões
-efetivamente utilizadas estão no [histórico do projeto](../README.md).
+efetivamente utilizadas estão no [histórico do projeto](historico.md).
 
 Na raiz do projeto:
 
 ```powershell
-cmake -S template -B out/build/windows -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-cmake --build out/build/windows
+cmake -S atividade3/questao_a -B out/build/questao_a -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+cmake --build out/build/questao_a
 ```
 
-Ou execute **CMake: Build** / **Ctrl+Shift+B** no VS Code. O build gera ELF,
-HEX, BIN e MAP em `out/build/windows/`, ignorado pelo Git. As dependências
-CMSIS, HAL e USB estão versionadas em [template/vendor](../template/vendor/README.md);
+Ou execute **CMake: Build** / **Ctrl+Shift+B**, selecionando a quest?o **a**, no VS Code. O build gera ELF,
+HEX, BIN e MAP em `out/build/questao_a/`, ignorado pelo Git. As dependências
+CMSIS, HAL e USB estão versionadas em [vendor](../../../vendor/README.md);
 a compilação não baixa bibliotecas. O diretório antigo `template/build/`
 foi preservado e não deve ser reutilizado no Windows.
 
@@ -60,7 +60,7 @@ Para gravar:
 3. Se necessário, instale WinUSB para esse dispositivo usando Zadig, conforme
    as instruções de gravação do README. Esse driver já foi instalado na máquina
    usada nos testes.
-4. Execute **DFU: Flash and Verify**. O script compila, grava em `0x08000000`
+4. Execute **DFU: Flash and Verify**, selecionando a quest?o **a**. O script compila, grava em `0x08000000`
    e compara o SHA-256 do BIN com a leitura de volta da Flash.
 5. Após o sucesso, pressione RESET com BOOT0 solto. O LED deve piscar.
 
@@ -69,7 +69,7 @@ O mesmo fluxo pode ser chamado pelo terminal:
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-dfu.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dfu.ps1 -Action List
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dfu.ps1 -Action Flash
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/project.ps1 -Question a -Action Flash
 ```
 
 No firmware, o Windows reconhece **USB CDC (0483:5740)** e usa o driver
@@ -92,7 +92,7 @@ significar que ocorreu um reset. O baud rate informado não configura uma UART.
 
 O material de referência é **2026_02 - ELEW32 - Sistemas Embarcados - Aula 06 -
 CMSIS, Interrupções.pdf**, fornecido pelo professor e mantido fora deste
-repositório. Os requisitos da atividade estão no [Enunciado.pdf](../Enunciado.pdf).
+repositório. Os requisitos da atividade estão no [Enunciado.pdf](../../../Enunciado.pdf).
 Os conceitos de acesso a registradores, vetor, prioridade e atendimento de
 interrupção são aplicados assim:
 
@@ -218,5 +218,14 @@ testes físicos aprovados.
 4. Faça outro clique: espere evento 36.
 5. Feche o terminal, desconecte/reconecte o USB e faça um clique. Reabra:
    espere a saudação e evento 1. A fila anterior não persiste sem energia.
-6. Execute **Button: Tests** para repetir os casos simulados de estabilidade,
+6. Execute **Questao (a): Button Tests** para repetir os casos simulados de estabilidade,
    fila, transmissão e passagem de `uint32_t` por zero.
+
+## Reorganiza??o por quest?o ? 13/10/2026
+
+Fontes, testes e documenta??o foram movidos para `atividade3/questao_a/`.
+A plataforma CMake e as bibliotecas s?o compartilhadas na raiz do reposit?rio.
+O build novo em `out/build/questao_a/` gerou ELF, HEX, BIN e MAP sem avisos,
+com os mesmos 14672 bytes de Flash e 3380 bytes de RAM est?tica. O SHA-256
+do BIN permanece igual ao registrado acima. Os testes C passaram novamente.
+N?o houve nova grava??o nem repeti??o dos testes f?sicos nesta reorganiza??o.
