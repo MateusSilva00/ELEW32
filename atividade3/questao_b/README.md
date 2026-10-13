@@ -1,8 +1,9 @@
 # Questão (b) — Tempo de reação
 
-**Em desenvolvimento — etapa 1.** O projeto já inicializa clock, SysTick e
-USB CDC, mantendo o LED de usuário apagado. A medição de reação e o botão
-serão implementados nos próximos commits.
+**Em desenvolvimento — etapa 2.** A lógica do teste de reação está implementada
+e testada em C no computador. A integração com botão, LED e mensagens será
+feita na etapa 3. Por enquanto, o firmware executa a base da etapa 1: clock,
+SysTick e USB CDC, mantendo o LED de usuário apagado.
 
 Conforme o [enunciado](../../Enunciado.pdf), o sistema deve anunciar que está
 pronto, aguardar alguns segundos sem revelar o instante exato do estímulo e
@@ -107,5 +108,39 @@ esperadas, com DTR ativo. A [captura da etapa 1](docs/evidencias/etapa-1-serial.
 registra essa leitura. Não houve medição instrumental do clock nem observação
 do contador SysTick por depurador; as frequências acima são as configuradas.
 
-Os testes de lógica serão adicionados com a implementação da máquina de
-estados no próximo commit. Esta etapa não valida medição de tempo de reação.
+A etapa 1 não valida medição de tempo de reação.
+
+## Etapa 2 — Lógica do teste
+
+O módulo [reaction_logic.c](src/reaction_logic.c), com interface em
+[reaction_logic.h](inc/reaction_logic.h), representa a rodada sem acessar
+registradores ou USB. Ele escolhe uma espera entre **2000 e 5000 ms**, registra
+o instante efetivo do estímulo e classifica a borda como antecipada ou como
+reação válida. O resultado permanece disponível até liberação explícita.
+
+As transições, escolhas de implementação e cuidados para a próxima etapa
+estão no [guia da lógica](docs/logica.md).
+
+Na raiz do repositório:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-reaction.ps1
+```
+
+Ou execute **Questao (b): Reaction Tests** no VS Code. O script usa o TCC já
+instalado em `out/tools/tcc/`; em uma máquina nova, acrescente `-Setup`.
+O executável dos testes fica em `out/tests/questao_b/`. Pode-se fornecer
+`-Compiler` com o caminho de outro compilador C nativo compatível.
+
+Em 13/10/2026, passaram os testes de prazo, estímulo atendido com atraso,
+reação de 284 ms e de 0 ms, antecipação, entrega atrasada de borda, eventos
+anteriores à rodada, resultado retido, cancelamento e passagem de `uint32_t`
+por zero. Foram executadas também 50000 rodadas, verificando os limites de
+2000 e 5000 ms e a variação/reprodutibilidade da sequência. A saída está
+registrada em [evidências dos testes C](docs/evidencias/etapa-2-testes-c.txt).
+
+O módulo também foi compilado pelo ARM GCC, sem avisos. Ainda não é chamado
+pelo `main`, portanto o linker remove suas funções não utilizadas. O BIN
+permanece idêntico à leitura da Flash da etapa 1, com o SHA-256 registrado
+acima e os mesmos tamanhos de Flash/RAM. Não houve nova gravação ou teste
+físico nesta etapa; o terminal continua mostrando a identificação da base.

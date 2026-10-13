@@ -2,6 +2,13 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Questao (b): Reaction Tests",
+            "type": "process",
+            "command": "powershell",
+            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/test-reaction.ps1"],
+            "problemMatcher": []
+        },
+        {
             "label": "Questao (a): Button Tests",
             "type": "process",
             "command": "powershell",

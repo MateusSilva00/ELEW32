@@ -1,0 +1,14 @@
+Questao (b), etapa 2 - 13/10/2026
+Comando: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-reaction.ps1
+Compilador nativo: Tiny C Compiler 0.9.27, -std=c11 -Wall -Wextra -Werror
+
+PASS: prazo, estimulo real e resultado de 284 ms retido
+PASS: antecipacao, entrega tardia e rejeicao de eventos antigos
+PASS: reacao de 0 ms e wrap de uint32_t na espera/reacao/antecipacao
+PASS: reset/cancelamento e 50000 rodadas com espera entre 2000 e 5000 ms
+
+Timestamps simulados: nao representa teste fisico do botao, LED ou USB.
+O mesmo reaction_logic.c foi compilado pelo ARM GCC 14.2.1 sem avisos.
+Ainda sem chamadas pelo main, o modulo e removido pelo linker no firmware.
+BIN identico a leitura da Flash da etapa 1; nenhuma nova gravacao:
+AD9352220718A774DEC3C730ECAEEB26547EF21EF14CA78FDBFC83AF5732BF96
