@@ -1,196 +1,270 @@
+#include <stdint.h>
+#include <stdio.h>
+
+#include "stm32f4xx.h"
+#include "tusb.h"
 #include "usb_serial.h"
-#include "usbd_core.h"
-#include "usbd_cdc.h"
 
-extern USBD_DescriptorsTypeDef usb_descriptors;
-static USBD_HandleTypeDef device;
-static USBD_CDC_HandleTypeDef class_storage;
-static bool class_allocated;
-static uint8_t rx_buffer[CDC_DATA_FS_MAX_PACKET_SIZE];
-static uint8_t tx_buffer[USB_SERIAL_TX_CAPACITY];
-static uint8_t line_coding[7] = {0x00, 0xC2, 0x01, 0x00, 0, 0, 8}; /* 115200 8N1 */
-static volatile bool terminal_open;
-static volatile uint32_t session_id;
-static volatile bool greeting_pending;
-static volatile usb_serial_tx_result_t app_result;
+static volatile uint32_t g_ms = 0;
+static uint32_t g_led_last = 0;
 
-/* Somente uma instancia CDC; sem heap e sem malloc dentro da interrupcao. */
-void *USBD_static_malloc(uint32_t size)
+void SysTick_Handler(void)
 {
-    if (class_allocated || size > sizeof(class_storage)) {
-        return NULL;
-    }
-    class_allocated = true;
-    return &class_storage;
+    g_ms++;
 }
 
-void USBD_static_free(void *ptr)
+uint32_t tusb_time_millis_api(void)
 {
-    if (ptr == &class_storage) {
-        class_allocated = false;
+    return g_ms;
+}
+
+// Base de tempo da aplicacao: o mesmo contador do SysTick
+uint32_t millis(void)
+{
+    return g_ms;
+}
+
+void tusb_time_delay_ms_api(uint32_t ms)
+{
+    uint32_t start = g_ms;
+
+    while ((uint32_t)(g_ms - start) < ms)
+    {
+        __NOP();
     }
 }
 
-static int8_t cdc_init(void)
+static void clock_init(void)
 {
-    terminal_open = false;
-    greeting_pending = true;
-    USBD_CDC_SetTxBuffer(&device, tx_buffer, 0U);
-    USBD_CDC_SetRxBuffer(&device, rx_buffer);
-    return USBD_OK;
-}
+    RCC->CR |= RCC_CR_HSION;
 
-static int8_t cdc_deinit(void)
-{
-    if (app_result == USB_SERIAL_TX_BUSY) {
-        app_result = USB_SERIAL_TX_ABORTED;
+    while ((RCC->CR & RCC_CR_HSIRDY) == 0U)
+    {
     }
-    terminal_open = false;
-    greeting_pending = true;
-    return USBD_OK;
+
+    RCC->CFGR &= ~RCC_CFGR_SW;
+
+    while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_HSI)
+    {
+    }
+
+    RCC->CR &= ~RCC_CR_PLLON;
+
+    while ((RCC->CR & RCC_CR_PLLRDY) != 0U)
+    {
+    }
+
+    RCC->CR |= RCC_CR_HSEON;
+
+    while ((RCC->CR & RCC_CR_HSERDY) == 0U)
+    {
+    }
+
+    RCC->APB1ENR |= RCC_APB1ENR_PWREN;
+
+#ifdef PWR_CR_VOS
+    PWR->CR |= PWR_CR_VOS;
+#endif
+
+    FLASH->ACR =
+        FLASH_ACR_ICEN |
+        FLASH_ACR_DCEN |
+        FLASH_ACR_PRFTEN |
+        FLASH_ACR_LATENCY_2WS;
+
+    // 84 MHz para CPU e 48 MHz para USB
+    RCC->PLLCFGR =
+        (25U  << 0U) |
+        (336U << 6U) |
+        (1U   << 16U) |
+        RCC_PLLCFGR_PLLSRC_HSE |
+        (7U   << 24U);
+
+    RCC->CFGR &= ~(
+        RCC_CFGR_HPRE |
+        RCC_CFGR_PPRE1 |
+        RCC_CFGR_PPRE2
+    );
+
+    RCC->CFGR |= RCC_CFGR_PPRE1_DIV2;
+
+    RCC->CR |= RCC_CR_PLLON;
+
+    while ((RCC->CR & RCC_CR_PLLRDY) == 0U)
+    {
+    }
+
+    RCC->CFGR &= ~RCC_CFGR_SW;
+    RCC->CFGR |= RCC_CFGR_SW_PLL;
+
+    while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL)
+    {
+    }
+
+    SystemCoreClockUpdate();
 }
 
-static int8_t cdc_control(uint8_t command, uint8_t *buffer, uint16_t length)
+static void led_init(void)
 {
-    switch (command) {
-    case CDC_SET_LINE_CODING:
-        if (length != sizeof(line_coding)) {
-            return USBD_FAIL;
+    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN;
+    __DSB();
+
+    GPIOC->MODER &= ~(3U << (13U * 2U));
+    GPIOC->MODER |=  (1U << (13U * 2U));
+    GPIOC->OTYPER &= ~(1U << 13U);
+    GPIOC->BSRR = (1U << 13U);
+}
+
+static void led_task(void)
+{
+    if ((uint32_t)(g_ms - g_led_last) >= 1000U)
+    {
+        g_led_last = g_ms;
+        GPIOC->ODR ^= (1U << 13U);
+    }
+}
+
+static void usb_gpio_init(void)
+{
+    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
+    __DSB();
+
+    // PA11 = DM e PA12 = DP
+    GPIOA->MODER &= ~(
+        (3U << (11U * 2U)) |
+        (3U << (12U * 2U))
+    );
+
+    GPIOA->MODER |=
+        (2U << (11U * 2U)) |
+        (2U << (12U * 2U));
+
+    GPIOA->OTYPER &= ~(
+        (1U << 11U) |
+        (1U << 12U)
+    );
+
+    GPIOA->OSPEEDR &= ~(
+        (3U << (11U * 2U)) |
+        (3U << (12U * 2U))
+    );
+
+    GPIOA->OSPEEDR |=
+        (3U << (11U * 2U)) |
+        (3U << (12U * 2U));
+
+    GPIOA->PUPDR &= ~(
+        (3U << (11U * 2U)) |
+        (3U << (12U * 2U))
+    );
+
+    GPIOA->AFR[1] &= ~(
+        (0xFU << 12U) |
+        (0xFU << 16U)
+    );
+
+    GPIOA->AFR[1] |=
+        (10U << 12U) |
+        (10U << 16U);
+
+    RCC->AHB2ENR |= RCC_AHB2ENR_OTGFSEN;
+    __DSB();
+}
+
+void OTG_FS_IRQHandler(void)
+{
+    tusb_int_handler(0, true);
+}
+
+int _write(int file, char *ptr, int len)
+{
+    (void)file;
+
+    if (!tud_cdc_connected())
+    {
+        return len;
+    }
+
+    uint32_t done = 0;
+
+    while (done < (uint32_t)len)
+    {
+        uint32_t n = tud_cdc_write(ptr + done, (uint32_t)len - done);
+        done += n;
+        tud_cdc_write_flush();
+
+        if (n == 0U)
+        {
+            tud_task();
         }
-        memcpy(line_coding, buffer, sizeof(line_coding));
-        break;
-    case CDC_GET_LINE_CODING:
-        if (length < sizeof(line_coding)) {
-            return USBD_FAIL;
+    }
+
+    return len;
+}
+
+void usb_serial_init(void)
+{
+    clock_init();
+    led_init();
+
+    if (SysTick_Config(SystemCoreClock / 1000U) != 0U)
+    {
+        while (1)
+        {
         }
-        memcpy(buffer, line_coding, sizeof(line_coding));
-        break;
-    case CDC_SET_CONTROL_LINE_STATE: {
-        /* Nesta versao ST, pedidos sem dados entregam o setup inteiro. */
-        const USBD_SetupReqTypedef *request = (const USBD_SetupReqTypedef *)buffer;
-        bool dtr = (request->wValue & 1U) != 0U;
-        if (dtr && !terminal_open) {
-            greeting_pending = true;
-            if (++session_id == 0U) { ++session_id; }
+    }
+
+    usb_gpio_init();
+
+    tusb_rhport_init_t usb_init =
+    {
+        .role  = TUSB_ROLE_DEVICE,
+        .speed = TUSB_SPEED_FULL
+    };
+
+    if (!tusb_rhport_init(0, &usb_init))
+    {
+        while (1)
+        {
         }
-        terminal_open = dtr;
-        break;
     }
-    default:
-        break;
+
+    NVIC_SetPriority(OTG_FS_IRQn, 2U);
+    NVIC_EnableIRQ(OTG_FS_IRQn);
+
+    // Espera o terminal abrir a CDC
+    while (!tud_cdc_connected())
+    {
+        tud_task();
+        led_task();
     }
-    return USBD_OK;
+
+    // O LED passa a ser usado pela aplicacao: comeca apagado
+    GPIOC->BSRR = (1U << 13U);
 }
 
-static int8_t cdc_receive(uint8_t *buffer, uint32_t *length)
+// Mantem a pilha USB atendida no laco principal (sem piscar o LED)
+void usb_serial_task(void)
 {
-    (void)buffer;
-    (void)length;
-    /* A atividade apenas transmite. Descarta entrada e rearma o endpoint. */
-    USBD_CDC_ReceivePacket(&device);
-    return USBD_OK;
+    tud_task();
 }
 
-static int8_t cdc_transmit_complete(uint8_t *buffer, uint32_t *length, uint8_t endpoint)
+int usb_serial_getchar(void)
 {
-    (void)buffer;
-    (void)length;
-    (void)endpoint;
-    if (app_result == USB_SERIAL_TX_BUSY) {
-        app_result = USB_SERIAL_TX_DONE;
+    tud_task();
+    led_task();
+
+    if (!tud_cdc_available())
+    {
+        return -1;
     }
-    return USBD_OK;
-}
 
-static USBD_CDC_ItfTypeDef interface = {
-    .Init = cdc_init,
-    .DeInit = cdc_deinit,
-    .Control = cdc_control,
-    .Receive = cdc_receive,
-    .TransmitCplt = cdc_transmit_complete,
-};
+    uint8_t ch;
 
-bool usb_serial_init(void)
-{
-    return USBD_Init(&device, &usb_descriptors, 0U) == USBD_OK &&
-           USBD_RegisterClass(&device, USBD_CDC_CLASS) == USBD_OK &&
-           USBD_CDC_RegisterInterface(&device, &interface) == USBD_OK &&
-           USBD_Start(&device) == USBD_OK;
-}
-
-/* Protege handle e buffer contra reset/configuracao/conclusao pelo USB.
- * SysTick continua habilitado. Nunca executar estas APIs dentro de uma ISR. */
-static uint32_t lock_usb(void)
-{
-    uint32_t enabled = NVIC_GetEnableIRQ(OTG_FS_IRQn);
-    NVIC_DisableIRQ(OTG_FS_IRQn);
-    return enabled;
-}
-
-static void unlock_usb(uint32_t enabled)
-{
-    if (enabled != 0U) {
-        NVIC_EnableIRQ(OTG_FS_IRQn);
+    if (tud_cdc_read(&ch, 1U) != 1U)
+    {
+        return -1;
     }
-}
 
-static bool write_locked(const void *data, uint16_t length)
-{
-    USBD_CDC_HandleTypeDef *cdc = device.pClassData;
-    if (!terminal_open || device.dev_state != USBD_STATE_CONFIGURED ||
-        cdc == NULL || cdc->TxState != 0U) {
-        return false;
-    }
-    /* O chamador pode reutilizar seu buffer assim que esta copia terminar. */
-    memcpy(tx_buffer, data, length);
-    USBD_CDC_SetTxBuffer(&device, tx_buffer, length);
-    return USBD_CDC_TransmitPacket(&device) == USBD_OK;
-}
-
-bool usb_serial_write(const void *data, uint16_t length)
-{
-    if (data == NULL || length == 0U || length > sizeof(tx_buffer)) {
-        return false;
-    }
-    uint32_t enabled = lock_usb();
-    /* A mensagem inicial sempre precede as futuras mensagens da aplicacao. */
-    bool sent = app_result == USB_SERIAL_TX_NONE &&
-                !greeting_pending && write_locked(data, length);
-    if (sent) {
-        app_result = USB_SERIAL_TX_BUSY;
-    }
-    unlock_usb(enabled);
-    return sent;
-}
-
-usb_serial_tx_result_t usb_serial_take_result(void)
-{
-    uint32_t enabled = lock_usb();
-    usb_serial_tx_result_t result = app_result;
-    if (result == USB_SERIAL_TX_DONE || result == USB_SERIAL_TX_ABORTED) {
-        app_result = USB_SERIAL_TX_NONE;
-    }
-    unlock_usb(enabled);
-    return result;
-}
-
-uint32_t usb_serial_session(void)
-{
-    uint32_t enabled = lock_usb();
-    uint32_t result = terminal_open && device.dev_state == USBD_STATE_CONFIGURED ? session_id : 0U;
-    unlock_usb(enabled);
-    return result;
-}
-
-void usb_serial_poll(void)
-{
-    static const char greeting[] =
-        "Questao (c): Morse A-Z.\r\n"
-        "Ponto <300 ms; traco >=300 ms; intervalo entre letras: 1 s.\r\n"
-        "Solte USER e digite.\r\n";
-    uint32_t enabled = lock_usb();
-    if (greeting_pending && write_locked(greeting, sizeof(greeting) - 1U)) {
-        greeting_pending = false;
-    }
-    unlock_usb(enabled);
+    return (int)ch;
 }

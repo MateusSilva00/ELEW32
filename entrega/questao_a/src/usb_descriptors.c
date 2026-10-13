@@ -1,75 +1,143 @@
-#include "usbd_core.h"
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+#include "tusb.h"
 
-/* VID/PID do exemplo CDC da ST, para este experimento com STM32. */
-static uint8_t device_descriptor[] = {
-    18, USB_DESC_TYPE_DEVICE, 0x00, 0x02, /* USB 2.0 */
-    0x02, 0x02, 0x00, USB_MAX_EP0_SIZE, /* CDC ACM */
-    0x83, 0x04, 0x40, 0x57,           /* 0483:5740 */
-    0x00, 0x01, 1, 2, 3, 1
+/* Development/test identifiers */
+#define USB_VID 0xCAFE
+#define USB_PID 0x4111
+#define USB_BCD 0x0100
+
+/* --------------------------------------------------------------------------
+ * Device descriptor
+ * -------------------------------------------------------------------------- */
+
+static tusb_desc_device_t const desc_device =
+{
+    .bLength            = sizeof(tusb_desc_device_t),
+    .bDescriptorType    = TUSB_DESC_DEVICE,
+
+    .bcdUSB             = 0x0200,
+
+    .bDeviceClass       = TUSB_CLASS_MISC,
+    .bDeviceSubClass    = MISC_SUBCLASS_COMMON,
+    .bDeviceProtocol    = MISC_PROTOCOL_IAD,
+
+    .bMaxPacketSize0    = CFG_TUD_ENDPOINT0_SIZE,
+
+    .idVendor           = USB_VID,
+    .idProduct          = USB_PID,
+    .bcdDevice          = USB_BCD,
+
+    .iManufacturer      = 1,
+    .iProduct           = 2,
+    .iSerialNumber      = 3,
+
+    .bNumConfigurations = 1
 };
-static uint8_t language_descriptor[] = {4, USB_DESC_TYPE_STRING, 0x09, 0x04};
-static uint8_t string_descriptor[USBD_MAX_STR_DESC_SIZ];
 
-static uint8_t *device(USBD_SpeedTypeDef speed, uint16_t *length)
+uint8_t const *tud_descriptor_device_cb(void)
 {
-    (void)speed;
-    *length = sizeof(device_descriptor);
-    return device_descriptor;
+    return (uint8_t const *)&desc_device;
 }
 
-static uint8_t *language(USBD_SpeedTypeDef speed, uint16_t *length)
+/* --------------------------------------------------------------------------
+ * Configuration descriptor
+ * -------------------------------------------------------------------------- */
+
+enum
 {
-    (void)speed;
-    *length = sizeof(language_descriptor);
-    return language_descriptor;
+    ITF_NUM_CDC = 0,
+    ITF_NUM_CDC_DATA,
+    ITF_NUM_TOTAL
+};
+
+#define EPNUM_CDC_NOTIF   0x81
+#define EPNUM_CDC_OUT     0x02
+#define EPNUM_CDC_IN      0x82
+
+#define CONFIG_TOTAL_LEN  (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN)
+
+static uint8_t const desc_configuration[] =
+{
+    TUD_CONFIG_DESCRIPTOR(
+        1,                  /* configuration number */
+        ITF_NUM_TOTAL,      /* interface count */
+        0,                  /* string index */
+        CONFIG_TOTAL_LEN,
+        0x00,               /* bus powered */
+        100                 /* mA */
+    ),
+
+    TUD_CDC_DESCRIPTOR(
+        ITF_NUM_CDC,
+        4,                  /* string index */
+        EPNUM_CDC_NOTIF,
+        8,
+        EPNUM_CDC_OUT,
+        EPNUM_CDC_IN,
+        64
+    )
+};
+
+uint8_t const *tud_descriptor_configuration_cb(uint8_t index)
+{
+    (void)index;
+    return desc_configuration;
 }
 
-static uint8_t *string(const char *text, uint16_t *length)
-{
-    USBD_GetString((uint8_t *)text, string_descriptor, length);
-    return string_descriptor;
-}
+/* --------------------------------------------------------------------------
+ * String descriptors
+ * -------------------------------------------------------------------------- */
 
-static uint8_t *manufacturer(USBD_SpeedTypeDef speed, uint16_t *length)
+static char const *string_desc_arr[] =
 {
-    (void)speed;
-    return string("ELEW32", length);
-}
+    (const char[]){ 0x09, 0x04 }, /* English 0x0409 */
+    "UTFPR",
+    "BlackPill F411 CMSIS CDC",
+    "F411CDC01",
+    "USB CDC"
+};
 
-static uint8_t *product(USBD_SpeedTypeDef speed, uint16_t *length)
-{
-    (void)speed;
-    return string("Black Pill F411 - Atividade 3", length);
-}
+static uint16_t desc_str[32 + 1];
 
-static uint8_t *serial(USBD_SpeedTypeDef speed, uint16_t *length)
+uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid)
 {
-    (void)speed;
-    static const char hex[] = "0123456789ABCDEF";
-    char text[25];
-    /* Numero de serie estavel, derivado dos 96 bits do identificador do chip. */
-    for (uint32_t word = 0; word < 3U; ++word) {
-        uint32_t uid = ((const volatile uint32_t *)UID_BASE)[word];
-        for (uint32_t digit = 0; digit < 8U; ++digit) {
-            text[word * 8U + digit] = hex[(uid >> (28U - digit * 4U)) & 0xFU];
+    (void)langid;
+
+    size_t count;
+
+    if (index == 0)
+    {
+        memcpy(&desc_str[1], string_desc_arr[0], 2);
+        count = 1;
+    }
+    else
+    {
+        const size_t n_strings =
+            sizeof(string_desc_arr) / sizeof(string_desc_arr[0]);
+
+        if (index >= n_strings)
+        {
+            return NULL;
+        }
+
+        const char *str = string_desc_arr[index];
+        count = strlen(str);
+
+        if (count > 32)
+        {
+            count = 32;
+        }
+
+        for (size_t i = 0; i < count; i++)
+        {
+            desc_str[1 + i] = (uint16_t)str[i];
         }
     }
-    text[24] = '\0';
-    return string(text, length);
-}
 
-static uint8_t *configuration(USBD_SpeedTypeDef speed, uint16_t *length)
-{
-    (void)speed;
-    return string("CDC", length);
-}
+    desc_str[0] =
+        (uint16_t)((TUSB_DESC_STRING << 8) | (2U * count + 2U));
 
-USBD_DescriptorsTypeDef usb_descriptors = {
-    .GetDeviceDescriptor = device,
-    .GetLangIDStrDescriptor = language,
-    .GetManufacturerStrDescriptor = manufacturer,
-    .GetProductStrDescriptor = product,
-    .GetSerialStrDescriptor = serial,
-    .GetConfigurationStrDescriptor = configuration,
-    .GetInterfaceStrDescriptor = configuration,
-};
+    return desc_str;
+}
