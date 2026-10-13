@@ -6,7 +6,7 @@ Abra a pasta **ELEW32** no VS Code. As tarefas e configuracoes em `.vscode/`
 na raiz usam o codigo em `template/` e geram os novos arquivos em
 `out/build/windows/`, ignorado pelo Git.
 
-O firmware atual e o minimo da **STM32F411CEU6** (etapa 2), com CMSIS e
+O firmware atual da **STM32F411CEU6** configura clock e SysTick (etapa 3), com CMSIS e
 gravacao exclusivamente pelo **USB da placa, em modo DFU**. O exemplo da etapa 1 permanece no historico do
 Git. O startup generico e `soma.s` continuam em `template/src/`, mas estao fora
 da lista de compilacao. O build Linux anterior em `template/build/` foi preservado.
@@ -83,7 +83,7 @@ build: prepara ambiente Windows para a atividade 3
 
 ## Etapa 2: firmware minimo da STM32F411CEU6
 
-O programa inclui `stm32f4xx.h`, confere a inicializacao das variaveis em
+Na etapa 2, o programa inclui `stm32f4xx.h`, confere a inicializacao das variaveis em
 `.data` e `.bss`, atualiza `SystemCoreClock`, define `firmware_iniciado = 1`,
 acende o LED de usuario em **PC13** e permanece em um laco com `__NOP()`.
 Ainda nao configura SysTick, USB ou interrupcoes do botao. O clock apos reset
@@ -141,8 +141,9 @@ Use o [Zadig oficial](https://zadig.akeo.ie/), selecione exatamente
 2. Execute **DFU: Flash and Verify**. A tarefa compila, grava a Flash interna
    em `0x08000000` e compara o SHA-256 da leitura de volta com o BIN compilado.
 3. Apos a mensagem de sucesso, pressione **RESET** com **BOOT0 solto**.
-4. Confirme que o LED de usuario **PC13** permanece aceso. O LED de alimentacao
-   sozinho nao confirma a execucao do programa.
+4. No firmware atual (etapa 3), confirme que o LED de usuario **PC13** pisca:
+   500 ms aceso e 500 ms apagado. Na etapa 2 ele permanecia aceso.
+   O LED de alimentacao sozinho nao confirma a execucao do programa.
 
 Os mesmos comandos podem ser executados no PowerShell, na raiz do projeto:
 
@@ -157,7 +158,7 @@ O script restringe a gravacao ao dispositivo DFU `0483:DF11`, alternativa 0
 (Flash interna), e verifica os vetores do BIN antes de gravar. O dfu-util recusa
 uma selecao ambigua se houver mais de uma placa compativel; conecte uma por vez.
 Nao altera option bytes nem solicita apagamento total. A leitura de verificacao
-fica em `out/build/windows/dfu-readback.bin`.
+fica em `out/build/windows/dfu-readback.bin` e e renovada em cada verificacao.
 
 O BIN puro pode gerar o aviso `Invalid DFU suffix signature`; o endereco e o
 dispositivo sao informados explicitamente. Uma falha de gravacao ou verificacao
@@ -189,4 +190,96 @@ Mensagem de commit sugerida:
 
 ```text
 feat: adiciona firmware minimo para a Black Pill F411
+```
+
+## Etapa 3: clock de 96 MHz e SysTick de 1 ms
+
+O firmware alterna PC13 a cada 500 ms usando o contador do SysTick. Um ciclo
+completo (aceso e apagado) dura aproximadamente um segundo. Ainda nao ha
+USB CDC nem interrupcao do botao; a gravacao continua pelo bootloader DFU.
+
+### Clock e cristal
+
+Usamos **HSE de 25 MHz como hipotese**, conforme o padrao documentado pela
+[WeAct](https://github.com/WeActStudio/WeActStudio.MiniSTM32F4x1).
+O usuario nao conseguiu identificar a marcacao do cristal nesta placa.
+O ritmo observado do LED e compativel com a hipotese, mas nao e uma medicao
+precisa da frequencia. `SystemCoreClockUpdate()` calcula a frequencia a partir
+dos registradores e de `HSE_VALUE`; ele nao mede o cristal.
+
+`template/src/clock.c` configura os registradores RCC, PWR e FLASH usando
+as definicoes CMSIS do dispositivo. O CMake define `HSE_VALUE=25000000U` para
+que a aplicacao e o codigo da ST usem o mesmo valor.
+
+| Elemento | Configuracao | Frequencia esperada |
+| --- | --- | --- |
+| Entrada do PLL | HSE / PLLM = 25 MHz / 25 | 1 MHz |
+| VCO | Entrada x PLLN = 1 MHz x 192 | 192 MHz |
+| SYSCLK e AHB/CPU | VCO / PLLP = 192 MHz / 2; AHB / 1 | 96 MHz |
+| APB1 | HCLK / 2 | 48 MHz |
+| APB2 | HCLK / 1 | 96 MHz |
+| Clock para USB | VCO / PLLQ = 192 MHz / 4 | 48 MHz |
+
+A CPU permanece no HSI enquanto o PLL e preparado. Configuramos a escala 1
+do regulador com PLL desligado e 3 wait states da Flash para operacao em
+3,3 V, antes de aumentar o clock. A troca para PLL ocorre depois de verificar
+HSE pronto, PLL travado e regulador pronto. As esperas possuem limite de
+leituras; esse limite nao representa milissegundos. Se a inicializacao falhar,
+o programa permanece com o LED apagado.
+
+Referencia dos registradores e limites: [manual ST RM0383](https://www.st.com/resource/en/reference_manual/dm00119316-stm32f411xce-advanced-armbased-32bit-mcus-stmicroelectronics.pdf),
+capitulos RCC, PWR e FLASH. A sequencia de ajuste de tensao tambem pode ser
+conferida em `HAL_PWREx_ControlVoltageScaling` do
+[driver oficial da ST](https://github.com/STMicroelectronics/stm32f4xx-hal-driver/blob/v1.8.3/Src/stm32f4xx_hal_pwr_ex.c).
+Essa referencia nao adiciona HAL ao projeto.
+
+### Como o SysTick chega ao handler
+
+`template/src/timebase.c` chama `SysTick_Config(SystemCoreClock / 1000U)`.
+Com 96 MHz, sao **96.000 ciclos por milissegundo**. A funcao CMSIS configura
+`LOAD = 95999`, limpa o contador atual e habilita o temporizador com clock
+da CPU e geracao de interrupcao. Definimos prioridade 0 para essa ISR curta.
+SysTick e uma excecao do nucleo; sua habilitacao esta no proprio SysTick,
+sem chamar `NVIC_EnableIRQ()` como faremos para interrupcoes externas.
+
+A entrada 15 da tabela de vetores, em `0x0800003C`, referencia
+`SysTick_Handler`. O startup da ST fornece um alias `weak` para
+`Default_Handler`; nossa funcao C com o mesmo nome substitui esse alias na
+linkedicao. A cada interrupcao, o processador usa a tabela para executar o
+handler, que apenas incrementa `milliseconds`, um `volatile uint32_t`.
+Isso aplica os conceitos de tabela de vetores e ISR da Aula 06 do professor.
+
+`millis()` retorna o contador. A leitura alinhada de 32 bits e atomica no
+Cortex-M4; `volatile` garante que o compilador consulte a memoria compartilhada
+com a ISR. A atualizacao do LED ocorre no `main`, usando a diferenca unsigned
+`(uint32_t)(now - last_toggle) >= 500U`, sem delay dentro da interrupcao.
+Entre verificacoes, `__WFI()` aguarda a proxima interrupcao.
+
+O contador volta a zero a cada aproximadamente 49,7 dias. A subtracao unsigned
+continua calculando o intervalo ao atravessar esse limite, desde que nao se
+deixe passar uma volta completa sem acompanhar o tempo. A base de tempo
+pressupoe que as interrupcoes nao fiquem bloqueadas por periodos prolongados:
+o SysTick nao enfileira todos os ticks perdidos.
+
+### Validacao da etapa 3
+
+- Compilacao sem avisos, com ELF, HEX, BIN e MAP gerados: 1440 bytes de Flash
+  e 12 bytes de RAM estatica, alem da pilha em execucao.
+- ELF e instrucoes inspecionados: `SysTick_Handler` possui implementacao
+  propria e incrementa o contador; `millis()` faz uma leitura de 32 bits.
+- Firmware gravado por USB DFU; leitura de volta com SHA-256 identico ao BIN.
+  Foi corrigida a renovacao do arquivo de leitura, pois dfu-util recusa
+  sobrescrever a verificacao anterior.
+- Apos RESET com BOOT0 solto, o usuario confirmou o LED piscando no ritmo
+  esperado: aproximadamente 500 ms aceso e 500 ms apagado.
+- Sem ST-Link, nao houve inspecao de registradores ou contador em tempo real.
+  Nao foi feita medicao instrumental dos clocks nem teste do clock USB por
+  comunicacao CDC. O valor de 48 MHz esta configurado para a etapa 4.
+- O comportamento proximo ao limite de `uint32_t` ainda nao foi testado na
+  placa; a validacao dos eventos nesse limite pertence a etapa 7.
+
+Mensagem de commit sugerida:
+
+```text
+feat: configura clock e base de tempo com SysTick
 ```

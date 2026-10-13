@@ -23,4 +23,7 @@ Fontes fixadas nas tags:
 
 O CMake define `STM32F411xE` para selecionar o dispositivo e
 `USER_VECT_TAB_ADDRESS` para que `SystemInit()` configure VTOR em `0x08000000`.
-Nao ha HAL nem configuracao de PLL/SysTick nesta etapa.
+`HSE_VALUE=25000000U` informa a frequencia presumida do cristal externo.
+A configuracao de PLL e SysTick pertence a aplicacao (`src/clock.c` e
+`src/timebase.c`); os arquivos de terceiros continuam sem modificacoes.
+Ainda nao ha HAL.

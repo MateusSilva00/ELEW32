@@ -38,6 +38,10 @@ if ($initialStack -ne 0x20020000 -or ($resetVector -band 1) -ne 1 -or
 if ($LASTEXITCODE -ne 0) { throw 'Falha na gravacao DFU. Confira modo DFU e driver USB.' }
 
 # Leitura de volta verifica os bytes gravados antes do reset manual.
+# dfu-util recusa sobrescrever o arquivo de uma verificacao anterior.
+if (Test-Path -LiteralPath $readback) {
+    Remove-Item -LiteralPath $readback -ErrorAction Stop
+}
 & $dfuUtil -d ',0483:df11' -a 0 -s "0x08000000:$($imageBytes.Length)" -U $readback
 if ($LASTEXITCODE -ne 0) { throw 'Falha na leitura de verificacao da Flash.' }
 if ((Get-FileHash -LiteralPath $firmware -Algorithm SHA256).Hash -ne

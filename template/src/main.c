@@ -1,4 +1,6 @@
 #include "stm32f4xx.h"
+#include "clock.h"
+#include "timebase.h"
 
 /* Comeca em zero: o startup limpa a secao .bss antes de chamar main. */
 volatile uint32_t firmware_iniciado;
@@ -21,13 +23,22 @@ int main(void)
         }
     }
 
-    /* O reset usa HSI de 16 MHz. Esta chamada apenas atualiza a variavel CMSIS. */
-    SystemCoreClockUpdate();
+    if (!clock_init_96mhz() || !timebase_init()) {
+        while (1) {
+            __NOP(); /* Falha de clock/base de tempo: LED permanece apagado. */
+        }
+    }
     firmware_iniciado = 1U;
-    GPIOC->BSRR = GPIO_BSRR_BR13; /* LED aceso: startup e main executados. */
+    GPIOC->BSRR = GPIO_BSRR_BR13;
+    uint32_t last_toggle = millis();
 
     while (1) {
-        /* A base de tempo e as interrupcoes serao adicionadas depois. */
-        __NOP();
+        uint32_t now = millis();
+        /* Subtracao unsigned continua correta quando o contador volta a zero. */
+        if ((uint32_t)(now - last_toggle) >= 500U) {
+            last_toggle += 500U;
+            GPIOC->ODR ^= (1U << 13);
+        }
+        __WFI(); /* Aguarda uma interrupcao; SysTick acorda a CPU a cada 1 ms. */
     }
 }

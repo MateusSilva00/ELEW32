@@ -38,6 +38,8 @@ add_link_options(
 # Lista explicita: o startup generico e soma.s do template nao entram no firmware.
 add_executable(${PROJECT_NAME}.elf
     src/main.c
+    src/clock.c
+    src/timebase.c
     src/runtime.c
     vendor/STM32F4/Source/Templates/system_stm32f4xx.c
     vendor/STM32F4/Source/Templates/gcc/startup_stm32f411xe.s
@@ -47,7 +49,9 @@ target_compile_features(${PROJECT_NAME}.elf PRIVATE c_std_11)
 target_compile_definitions(${PROJECT_NAME}.elf PRIVATE
     STM32F411xE
     USER_VECT_TAB_ADDRESS
+    HSE_VALUE=25000000U
 )
+target_include_directories(${PROJECT_NAME}.elf PRIVATE inc)
 target_include_directories(${PROJECT_NAME}.elf SYSTEM PRIVATE
     vendor/CMSIS/Core/Include
     vendor/STM32F4/Include
