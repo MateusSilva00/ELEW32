@@ -1,0 +1,5 @@
+﻿Monitor em COM9, 115200 8N1, DTR ativo. Duracao: 120 segundos; Ctrl+C encerra.
+Sistema iniciado...
+Botao 1 pressionado em 54698 ms
+Botao 2 pressionado em 55922 ms
+Botao 3 pressionado em 57516 ms

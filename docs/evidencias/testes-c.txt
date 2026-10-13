@@ -1,0 +1,4 @@
+﻿PASS: 29/30 ms, bouncing, timestamp, botao mantido e soltura estavel
+PASS: boot pressionado e wrap de uint32_t
+PASS: 32 vagas, overflow, ordem FIFO e reutilizacao circular
+PASS: USB ocupado/abortado/concluido, mensagens e avisos de perda

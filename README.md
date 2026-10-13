@@ -1,12 +1,17 @@
 # Atividade 3 — Sistemas Embarcados
 
+A questao (a) esta implementada e validada. Consulte o
+[guia final de uso, funcionamento e evidencias](docs/questao-a.md).
+As secoes abaixo preservam o desenvolvimento por etapas; descricoes de
+firmwares anteriores pertencem ao respectivo momento do projeto.
+
 ## Etapa 1: ambiente Windows
 
 Abra a pasta **ELEW32** no VS Code. As tarefas e configuracoes em `.vscode/`
 na raiz usam o codigo em `template/` e geram os novos arquivos em
 `out/build/windows/`, ignorado pelo Git.
 
-O firmware atual da **STM32F411CEU6** registra cliques com debounce e fila (etapa 6), com CMSIS e
+O firmware final da **STM32F411CEU6** registra cliques com debounce e fila, com CMSIS e
 gravacao exclusivamente pelo **USB da placa, em modo DFU**. O exemplo da etapa 1 permanece no historico do
 Git. O startup generico e `soma.s` continuam em `template/src/`, mas estao fora
 da lista de compilacao. O build Linux anterior em `template/build/` foi preservado.
@@ -617,4 +622,26 @@ Mensagem de commit sugerida:
 
 ```text
 feat: registra pressionamentos com debounce e timestamp
+```
+
+## Etapa 7: validacao final e documentacao da questao (a)
+
+O [guia final](docs/questao-a.md) consolida montagem, compilacao, gravacao,
+terminal e funcionamento; relaciona o codigo aos conceitos da Aula 06 e
+separa verificacoes de build, testes C simulados e testes efetivos na placa.
+
+A compilacao em pasta nova ficou identica ao firmware gravado na etapa 6.
+Na placa, 35 cliques com o terminal fechado resultaram em 32 eventos guardados
+e aviso de 3 perdas. O clique seguinte foi o numero 36. A reconexao fisica
+do cabo USB reiniciou a placa e a contagem, e a COM9 voltou a transmitir.
+As capturas e os resultados dos testes C estao em `docs/evidencias/`.
+
+Bouncing controlado e a passagem de `uint32_t` por zero foram validados em
+software, sem provocar esses cenarios fisicamente. Nao houve inspecao por
+ST-Link nem medicao instrumental de clocks ou bordas.
+
+Mensagem de commit sugerida:
+
+```text
+docs: documenta e valida a questao a
 ```

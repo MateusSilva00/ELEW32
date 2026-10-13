@@ -1,0 +1,35 @@
+﻿Monitor em COM9, 115200 8N1, DTR ativo. Duracao: 4 segundos; Ctrl+C encerra.
+Sistema iniciado...
+Botao 1 pressionado em 8537 ms
+Botao 2 pressionado em 10560 ms
+Botao 3 pressionado em 12572 ms
+Botao 4 pressionado em 14801 ms
+Botao 5 pressionado em 17073 ms
+Botao 6 pressionado em 19415 ms
+Botao 7 pressionado em 21712 ms
+Botao 8 pressionado em 23878 ms
+Botao 9 pressionado em 26225 ms
+Botao 10 pressionado em 28636 ms
+Botao 11 pressionado em 30849 ms
+Botao 12 pressionado em 33186 ms
+Botao 13 pressionado em 35279 ms
+Botao 14 pressionado em 37465 ms
+Botao 15 pressionado em 39790 ms
+Botao 16 pressionado em 42057 ms
+Botao 17 pressionado em 44519 ms
+Botao 18 pressionado em 46731 ms
+Botao 19 pressionado em 49107 ms
+Botao 20 pressionado em 51447 ms
+Botao 21 pressionado em 53828 ms
+Botao 22 pressionado em 56091 ms
+Botao 23 pressionado em 58751 ms
+Botao 24 pressionado em 61145 ms
+Botao 25 pressionado em 63548 ms
+Botao 26 pressionado em 65988 ms
+Botao 27 pressionado em 68818 ms
+Botao 28 pressionado em 71322 ms
+Botao 29 pressionado em 74122 ms
+Botao 30 pressionado em 76749 ms
+Botao 31 pressionado em 79133 ms
+Botao 32 pressionado em 81492 ms
+Eventos perdidos: 3 (fila cheia)
