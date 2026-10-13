@@ -1,8 +1,8 @@
 # Questão (c) — Decodificador Morse
 
-**Em desenvolvimento — etapa 1.** A base inicializa clock, SysTick e USB CDC,
-com LED de usuário apagado. A leitura do botão e a decodificação Morse serão
-implementadas nas próximas etapas.
+**Em desenvolvimento — etapa 2.** A lógica Morse está implementada e testada
+em C no computador. A integração com EXTI e serial será a etapa 3; na placa,
+o firmware ainda executa a base com LED apagado e mensagem de identificação.
 
 Conforme o [enunciado](../../Enunciado.pdf), o botão USER permite inserir
 letras em Morse: pressionamento curto representa ponto e longo representa
@@ -30,9 +30,9 @@ decodificar e mostrar o resultado pela serial.
    Commit: `docs: documenta e valida a questao c`.
 
 Uma etapa por vez, com commit feito pelo usuário antes de avançarmos.
-O enunciado não fixa o limiar entre pressão curta e longa; essa escolha será
-documentada na etapa 2. O intervalo entre letras será contado com o botão
-solto, sem encerrar uma letra durante uma pressão longa.
+O enunciado não fixa o limiar entre pressão curta e longa. Adotamos **300 ms**:
+menos que isso é ponto; 300 ms ou mais é traço. O intervalo de **1000 ms**
+entre letras é contado com o botão solto, sem encerrar durante uma pressão longa.
 
 ## Base desta etapa
 
@@ -107,5 +107,32 @@ esperadas com DTR ativo e foi fechado normalmente após 5 segundos.
 A [captura da etapa 1](docs/evidencias/etapa-1-serial.txt) foi preservada.
 
 Não houve medição instrumental do clock nem inspeção do contador por depurador.
-Os testes C da lógica serão adicionados na etapa 2; nesta base ainda não há
-decodificação para testar.
+Na etapa 1 ainda não havia decodificação para testar.
+
+## Etapa 2 — Lógica e testes
+
+O [guia da lógica](docs/logica.md) descreve as regras, os limites e o contrato
+de integração. O módulo em [morse_logic.c](src/morse_logic.c) decodifica A–Z,
+produz um resultado por letra e distingue sequência desconhecida de excesso
+de símbolos. O limiar é configurável em [morse_logic.h](inc/morse_logic.h).
+
+Na raiz `ELEW32`:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-morse.ps1
+```
+
+Ou execute **Questao (c): Morse Tests** no VS Code. O script usa o TCC local
+em `out/tools/tcc/`; em uma máquina nova, acrescente `-Setup`. Também aceita
+`-Compiler` com o caminho de outro compilador C nativo compatível. O executável
+fica em `out/tests/questao_c/`.
+
+Validação em 13/10/2026: testes C aprovados para as 26 letras, limiares
+299/300/301 ms e 999/1000/1001 ms, pressão mantida, duplicatas, erros,
+10 mil símbolos consecutivos, wrap e reinicialização. Consulte a
+[saída dos testes](docs/evidencias/etapa-2-testes-c.txt).
+
+O ARM GCC compilou o módulo sem avisos. Ele ainda não é chamado pelo `main`,
+portanto o linker remove o código não utilizado. O BIN é idêntico à leitura
+da Flash da etapa 1, com o mesmo SHA-256 e tamanho. Não houve nova gravação
+ou teste físico nesta etapa; USER ainda não insere Morse na placa.

@@ -2,6 +2,13 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Questao (c): Morse Tests",
+            "type": "process",
+            "command": "powershell",
+            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/test-morse.ps1"],
+            "problemMatcher": []
+        },
+        {
             "label": "Questao (b): Reaction Tests",
             "type": "process",
             "command": "powershell",

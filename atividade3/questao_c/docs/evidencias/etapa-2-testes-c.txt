@@ -1,0 +1,15 @@
+Questao (c), etapa 2 - 13/10/2026
+Comando: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-morse.ps1
+Compilador nativo: Tiny C Compiler 0.9.27, -std=c11 -Wall -Wextra -Werror.
+Bordas e timestamps simulados; mesmo morse_logic.c compilado no firmware.
+
+PASS: 26 letras A-Z, sequencias preservadas e um resultado por letra
+PASS: limiar 299/300/301 ms, botao mantido e bordas duplicadas
+PASS: intervalo 999/1000/1001 ms, letras sucessivas e atendimento tardio
+PASS: sequencia invalida, 10000 simbolos sem overflow de memoria e recuperacao
+PASS: wrap uint32_t na duracao/intervalo e cancelamento por reinicializacao
+
+ARM GNU 14.2.1: modulo compilado sem avisos, ainda sem chamadas pelo main.
+BIN igual a leitura de Flash da etapa 1; nenhuma nova gravacao.
+Flash 13568 bytes; RAM estatica 3092 bytes.
+SHA256: 142CA86AA6F84C9B87CE61526479F20009BA70E3B7052128D9D90A4A1915B782

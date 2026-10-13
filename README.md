@@ -7,7 +7,7 @@ USB da própria placa. Requisitos: [Enunciado.pdf](Enunciado.pdf).
 | --- | --- | --- |
 | (a) | [Contador de pressionamentos](atividade3/questao_a/README.md) | Implementado e validado |
 | (b) | [Tempo de reação](atividade3/questao_b/README.md) | Implementado e validado |
-| (c) | [Decodificador Morse](atividade3/questao_c/README.md) | Etapa 1: base compilável; decodificação pendente |
+| (c) | [Decodificador Morse](atividade3/questao_c/README.md) | Etapa 2: lógica testada; integração pendente |
 | (d) | [Sequência rítmica](atividade3/questao_d/README.md) | A implementar |
 
 Cada questão terá seus próprios fontes, testes e documentação. A questão (a)
