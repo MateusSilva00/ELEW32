@@ -2,7 +2,17 @@
 #include "stm32f4xx.h"
 #include "timebase.h"
 
-static volatile button_snapshot_t latest;
+static button_logic_t state;
+static volatile bool initialized;
+
+/* Secoes curtas: preservam PRIMASK e impedem acesso parcial entre main,
+ * EXTI0 e SysTick. Nao fazer USB, formatacao ou espera com IRQs mascaradas. */
+static uint32_t lock(void)
+{
+    uint32_t mask = __get_PRIMASK();
+    __disable_irq();
+    return mask;
+}
 
 void button_init(void)
 {
@@ -29,35 +39,66 @@ void button_init(void)
     /* Descarta pendencias anteriores; o estado inicial nao conta como borda. */
     EXTI->PR = EXTI_PR_PR0;
     NVIC_ClearPendingIRQ(EXTI0_IRQn);
-    latest.irq_count = 0U;
-    latest.pressed = (GPIOA->IDR & GPIO_IDR_ID0) == 0U;
-    latest.timestamp_ms = millis();
+    uint32_t mask = lock();
+    button_logic_init(&state, (GPIOA->IDR & GPIO_IDR_ID0) == 0U, millis());
+    initialized = true;
+    __set_PRIMASK(mask);
 
     NVIC_SetPriority(EXTI0_IRQn, 1U); /* SysTick=0, botao=1, USB=2. */
     EXTI->IMR |= EXTI_IMR_MR0;
     NVIC_EnableIRQ(EXTI0_IRQn);
 }
 
-button_snapshot_t button_snapshot(void)
+void button_tick(uint32_t now)
 {
-    uint32_t enabled = NVIC_GetEnableIRQ(EXTI0_IRQn);
-    NVIC_DisableIRQ(EXTI0_IRQn);
-    /* volatile nao torna a copia dos tres campos atomica: protegemos a copia. */
-    button_snapshot_t snapshot = latest;
-    if (enabled != 0U) {
-        NVIC_EnableIRQ(EXTI0_IRQn);
+    if (!initialized) {
+        return;
     }
-    return snapshot;
+    /* SysTick tem prioridade maior: nao confirmar enquanto uma borda ainda
+     * aguarda atendimento pela EXTI0. Conferimos tambem o nivel fisico. */
+    bool pressed = (GPIOA->IDR & GPIO_IDR_ID0) == 0U;
+    if ((EXTI->PR & EXTI_PR_PR0) != 0U) {
+        return;
+    }
+    if (pressed != state.raw_pressed) {
+        button_logic_edge(&state, pressed, now);
+        return;
+    }
+    button_logic_tick(&state, now);
+}
+
+bool button_event_peek(button_event_t *event)
+{
+    uint32_t mask = lock();
+    bool available = button_logic_peek(&state, event);
+    __set_PRIMASK(mask);
+    return available;
+}
+
+void button_event_pop(void)
+{
+    uint32_t mask = lock();
+    button_logic_pop(&state);
+    __set_PRIMASK(mask);
+}
+
+uint32_t button_lost_total(void)
+{
+    uint32_t mask = lock();
+    uint32_t total = state.lost_total;
+    __set_PRIMASK(mask);
+    return total;
 }
 
 void EXTI0_IRQHandler(void)
 {
     if ((EXTI->PR & EXTI_PR_PR0) != 0U) {
+        uint32_t mask = lock();
         /* W1C: escrever 1 limpa somente PR0. Nao usar |= neste registrador. */
         EXTI->PR = EXTI_PR_PR0;
-        latest.pressed = (GPIOA->IDR & GPIO_IDR_ID0) == 0U;
-        latest.timestamp_ms = millis();
-        ++latest.irq_count;
+        button_logic_edge(&state, (GPIOA->IDR & GPIO_IDR_ID0) == 0U, millis());
+        __DSB();
+        __set_PRIMASK(mask);
     }
     __DSB(); /* Garante conclusao da escrita periferica antes de sair da ISR. */
 }

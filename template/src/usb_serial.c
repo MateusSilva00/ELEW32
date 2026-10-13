@@ -11,6 +11,7 @@ static uint8_t tx_buffer[USB_SERIAL_TX_CAPACITY];
 static uint8_t line_coding[7] = {0x00, 0xC2, 0x01, 0x00, 0, 0, 8}; /* 115200 8N1 */
 static volatile bool terminal_open;
 static volatile bool greeting_pending;
+static volatile usb_serial_tx_result_t app_result;
 
 /* Somente uma instancia CDC; sem heap e sem malloc dentro da interrupcao. */
 void *USBD_static_malloc(uint32_t size)
@@ -40,6 +41,9 @@ static int8_t cdc_init(void)
 
 static int8_t cdc_deinit(void)
 {
+    if (app_result == USB_SERIAL_TX_BUSY) {
+        app_result = USB_SERIAL_TX_ABORTED;
+    }
     terminal_open = false;
     greeting_pending = true;
     return USBD_OK;
@@ -85,12 +89,23 @@ static int8_t cdc_receive(uint8_t *buffer, uint32_t *length)
     return USBD_OK;
 }
 
+static int8_t cdc_transmit_complete(uint8_t *buffer, uint32_t *length, uint8_t endpoint)
+{
+    (void)buffer;
+    (void)length;
+    (void)endpoint;
+    if (app_result == USB_SERIAL_TX_BUSY) {
+        app_result = USB_SERIAL_TX_DONE;
+    }
+    return USBD_OK;
+}
+
 static USBD_CDC_ItfTypeDef interface = {
     .Init = cdc_init,
     .DeInit = cdc_deinit,
     .Control = cdc_control,
     .Receive = cdc_receive,
-    .TransmitCplt = NULL, /* A classe ST limpa TxState ao concluir, inclusive ZLP. */
+    .TransmitCplt = cdc_transmit_complete,
 };
 
 bool usb_serial_init(void)
@@ -137,9 +152,24 @@ bool usb_serial_write(const void *data, uint16_t length)
     }
     uint32_t enabled = lock_usb();
     /* A mensagem inicial sempre precede as futuras mensagens da aplicacao. */
-    bool sent = !greeting_pending && write_locked(data, length);
+    bool sent = app_result == USB_SERIAL_TX_NONE &&
+                !greeting_pending && write_locked(data, length);
+    if (sent) {
+        app_result = USB_SERIAL_TX_BUSY;
+    }
     unlock_usb(enabled);
     return sent;
+}
+
+usb_serial_tx_result_t usb_serial_take_result(void)
+{
+    uint32_t enabled = lock_usb();
+    usb_serial_tx_result_t result = app_result;
+    if (result == USB_SERIAL_TX_DONE || result == USB_SERIAL_TX_ABORTED) {
+        app_result = USB_SERIAL_TX_NONE;
+    }
+    unlock_usb(enabled);
+    return result;
 }
 
 void usb_serial_poll(void)

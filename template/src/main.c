@@ -3,7 +3,7 @@
 #include "timebase.h"
 #include "usb_serial.h"
 #include "button.h"
-#include "button_trace.h"
+#include "button_report.h"
 
 /* Comeca em zero: o startup limpa a secao .bss antes de chamar main. */
 volatile uint32_t firmware_iniciado;
@@ -43,7 +43,7 @@ int main(void)
 
     while (1) {
         usb_serial_poll();
-        button_trace_poll();
+        button_report_poll();
         uint32_t now = millis();
         /* Subtracao unsigned continua correta quando o contador volta a zero. */
         if ((uint32_t)(now - last_toggle) >= 500U) {

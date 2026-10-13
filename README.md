@@ -6,7 +6,7 @@ Abra a pasta **ELEW32** no VS Code. As tarefas e configuracoes em `.vscode/`
 na raiz usam o codigo em `template/` e geram os novos arquivos em
 `out/build/windows/`, ignorado pelo Git.
 
-O firmware atual da **STM32F411CEU6** detecta o botao por EXTI0 (etapa 5), com CMSIS e
+O firmware atual da **STM32F411CEU6** registra cliques com debounce e fila (etapa 6), com CMSIS e
 gravacao exclusivamente pelo **USB da placa, em modo DFU**. O exemplo da etapa 1 permanece no historico do
 Git. O startup generico e `soma.s` continuam em `template/src/`, mas estao fora
 da lista de compilacao. O build Linux anterior em `template/build/` foi preservado.
@@ -488,4 +488,133 @@ Mensagem de commit sugerida:
 
 ```text
 feat: detecta bordas do botao por EXTI0
+```
+
+## Etapa 6: debounce, contagem e fila de eventos
+
+O diagnostico bruto da etapa 5 foi substituido pela mensagem definitiva:
+
+```text
+Sistema iniciado...
+Botao 1 pressionado em 2387 ms
+```
+
+### Quando um pressionamento e valido
+
+Cada atendimento da EXTI0 registra o nivel de PA0 e o instante em milissegundos.
+Cada nova borda reinicia a espera. SysTick verifica a estabilidade a cada 1 ms;
+apos **30 ms sem nova borda**, confirma o estado candidato. O contador aumenta
+somente ao confirmar pressionado, depois de uma soltura tambem estavel por
+30 ms. Manter apertado nao repete; soltar nao gera mensagem de pressionamento.
+Ao ligar a placa, exige-se primeiro uma soltura estavel, inclusive se USER/KEY
+estiver pressionado durante o reset.
+
+O timestamp do evento e **a borda que iniciou o intervalo estavel validado**,
+nao o instante da confirmacao 30 ms depois. Por exemplo, se o bouncing produz
+descidas em 100 e 111 ms, com uma subida entre elas, e a ultima descida fica
+estavel, o timestamp sera 111 ms. Ele continua tendo resolucao de 1 ms e
+representa o atendimento em software, conforme explicado na etapa 5.
+
+`button_logic.c` contem a maquina de estados e a fila, sem registradores ou
+dependencia de USB. `button.c` adapta essa logica ao hardware:
+
+- EXTI0 reconhece PR0 e atualiza o candidato, sem imprimir nem esperar.
+- SysTick incrementa o contador de tempo e chama `button_tick()`. Se ha PR0
+  pendente, adia a confirmacao ate a EXTI0 atender; tambem confere o nivel fisico.
+- Secoes criticas curtas preservam/restauram PRIMASK para proteger alteracoes
+  compartilhadas entre EXTI0, SysTick e main. Nao ha USB, formatacao ou delay
+  nessas secoes. SysTick tem prioridade maior que EXTI0, que tem prioridade
+  maior que USB. O estado e acessado por funcoes com essa protecao; `volatile`
+  sozinho nao seria suficiente para proteger a estrutura e a fila.
+
+A diferenca unsigned `(uint32_t)(now - since_ms)` funciona ao atravessar o
+limite do contador de milissegundos, desde que o sistema continue acompanhando
+o tempo. A base SysTick e os timeouts do HAL continuam compartilhados.
+
+### Fila e transmissao
+
+Cada evento guarda numero e timestamp em uma **fila circular de 32 vagas**.
+SysTick produz eventos; `button_report_poll()`, no main, consulta o mais antigo,
+formata a mensagem e tenta enviar. USB ocupado ou terminal fechado faz o main
+tentar novamente em outra iteracao, mantendo a fila.
+
+A serial copia a mensagem para seu buffer proprio. Agora seu callback de
+conclusao informa `DONE`, consumido por `usb_serial_take_result()`; somente
+entao o main remove o evento da fila. Enquanto a transferencia estiver em
+curso, o evento ainda ocupa uma das 32 vagas. Se a classe USB for reiniciada
+antes da conclusao, informa `ABORTED` e o evento fica disponivel para nova tentativa.
+O consumidor deve consultar esse resultado antes de outro `usb_serial_write()`.
+
+Essa confirmacao e do transporte USB. Nao ha protocolo de confirmacao do
+aplicativo no computador: nao se garante leitura humana, e uma interrupcao
+de conexao em momento ambiguo pode resultar em repeticao na nova tentativa.
+O numero do evento permite identificar essa repeticao.
+
+Se a fila lotar, o novo pressionamento continua incrementando o contador,
+mas seu evento e descartado; os 32 anteriores sao preservados. A quantidade
+perdida e acumulada e informada depois de escoar os eventos pendentes:
+
+```text
+Eventos perdidos: 3 (fila cheia)
+```
+
+O aviso tambem aguarda a conclusao USB e nao apaga perdas novas ocorridas
+enquanto estava em transito. O proximo evento pode ter um salto na numeracao,
+correspondente aos pressionamentos descartados.
+
+Com a alimentacao exclusivamente pelo USB, **desconectar o cabo desliga a
+placa e apaga a fila em RAM**. Para acumular eventos sem consumo neste arranjo,
+deixe o cabo conectado e feche o terminal/desative DTR. Os contadores e a fila
+tambem reiniciam ao pressionar RESET; nao ha persistencia em Flash.
+
+### Testes automatizados do codigo C
+
+`tests/test_button.c` compila o mesmo `button_logic.c` e `button_report.c` do
+firmware. Apenas o adaptador de hardware/USB e simulado nos testes; nao ha uma
+segunda implementacao do debounce. Os testes executam no Windows e nao
+substituem a verificacao de EXTI, prioridades, sinal eletrico ou USB na placa.
+
+Preparacao opcional do compilador portatil de testes e execucao:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-button.ps1 -Setup
+# Nas proximas execucoes, tambem disponivel como tarefa Button: Tests:
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-button.ps1
+```
+
+`-Setup` baixa o [Tiny C Compiler 0.9.27 oficial para Windows x64](https://download.savannah.gnu.org/releases/tinycc/tcc-0.9.27-win64-bin.zip)
+somente se ausente, confere o SHA-256
+`34A721949A2583FDFF725312DA092FA0F5F1F284B702E6F811C6954714FAABB2`
+e extrai o pacote com suas licencas em `out/tools/`. Nao altera o PATH.
+Tambem e possivel informar `-Compiler` com o caminho de GCC/Clang/TCC nativo.
+O ARM GCC continua sendo o compilador do firmware; o TCC e usado somente nos testes.
+`tests/compiler_compat.h` preserva a verificacao estatica do tamanho de buffer
+no TCC antigo, que ainda nao reconhece `_Static_assert`.
+
+### Validacao da etapa 6
+
+- Compilacao ARM sem avisos: ELF, HEX, BIN e MAP; 14672 bytes de Flash e 3380
+  bytes de RAM estatica, alem da pilha em execucao.
+- Vetores de EXTI0, SysTick e OTG FS conferidos no ELF/BIN. Firmware gravado
+  por DFU e comparado com a leitura de volta, com SHA-256 identico.
+- Testes C aprovados: limite de 29/30 ms, pulso curto, bouncing simulado,
+  timestamp preservado, botao mantido, soltura insuficiente/estavel, boot com
+  botao pressionado e calculo temporal atravessando `UINT32_MAX`.
+- Fila testada com 35 pressionamentos: 32 eventos preservados em ordem e 3
+  perdas; mais 1000 ciclos de insercao/remocao conferiram reutilizacao circular.
+- Consumidor testado com USB simulado: ocupado, transferencia abortada,
+  repeticao do evento pendente, remocao somente na conclusao, mensagens exatas
+  e novas perdas durante o envio de um aviso anterior.
+- Teste fisico na COM9: o usuario realizou dois cliques normais e um terceiro
+  mantido por aproximadamente 5 segundos, com soltura entre eles. Foram recebidos
+  exatamente os eventos 1, 2 e 3, em `54698`, `55922` e `57516` ms, respectivamente.
+  Nao houve repeticao durante o pressionamento mantido nem evento extra na soltura.
+  Captura local em `out/button-debounce-stage6.log`, ignorada pelo Git.
+- Saturacao da fila e passagem de `uint32_t` foram testadas em software; ainda
+  nao foram provocadas na placa. A validacao fisica completa pertence a etapa 7.
+
+Mensagem de commit sugerida:
+
+```text
+feat: registra pressionamentos com debounce e timestamp
 ```

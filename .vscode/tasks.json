@@ -2,6 +2,13 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Button: Tests",
+            "type": "process",
+            "command": "powershell",
+            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/test-button.ps1"],
+            "problemMatcher": []
+        },
+        {
             "label": "USB: Serial Monitor",
             "type": "process",
             "command": "powershell",
