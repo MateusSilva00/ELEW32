@@ -1,6 +1,7 @@
 #include "stm32f4xx.h"
 #include "clock.h"
 #include "timebase.h"
+#include "usb_serial.h"
 
 /* Comeca em zero: o startup limpa a secao .bss antes de chamar main. */
 volatile uint32_t firmware_iniciado;
@@ -28,11 +29,17 @@ int main(void)
             __NOP(); /* Falha de clock/base de tempo: LED permanece apagado. */
         }
     }
+    if (!usb_serial_init()) {
+        while (1) {
+            __NOP(); /* USB nao inicializou: LED permanece apagado. */
+        }
+    }
     firmware_iniciado = 1U;
     GPIOC->BSRR = GPIO_BSRR_BR13;
     uint32_t last_toggle = millis();
 
     while (1) {
+        usb_serial_poll();
         uint32_t now = millis();
         /* Subtracao unsigned continua correta quando o contador volta a zero. */
         if ((uint32_t)(now - last_toggle) >= 500U) {

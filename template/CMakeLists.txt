@@ -41,6 +41,18 @@ add_executable(${PROJECT_NAME}.elf
     src/clock.c
     src/timebase.c
     src/runtime.c
+    src/usb_serial.c
+    src/usb_descriptors.c
+    src/usb_port.c
+    vendor/STM32F4_HAL/Src/stm32f4xx_hal.c
+    vendor/STM32F4_HAL/Src/stm32f4xx_hal_rcc.c
+    vendor/STM32F4_HAL/Src/stm32f4xx_hal_pcd.c
+    vendor/STM32F4_HAL/Src/stm32f4xx_hal_pcd_ex.c
+    vendor/STM32F4_HAL/Src/stm32f4xx_ll_usb.c
+    vendor/STM32_USB_Device/Core/Src/usbd_core.c
+    vendor/STM32_USB_Device/Core/Src/usbd_ctlreq.c
+    vendor/STM32_USB_Device/Core/Src/usbd_ioreq.c
+    vendor/STM32_USB_Device/Class/CDC/Src/usbd_cdc.c
     vendor/STM32F4/Source/Templates/system_stm32f4xx.c
     vendor/STM32F4/Source/Templates/gcc/startup_stm32f411xe.s
 )
@@ -50,11 +62,15 @@ target_compile_definitions(${PROJECT_NAME}.elf PRIVATE
     STM32F411xE
     USER_VECT_TAB_ADDRESS
     HSE_VALUE=25000000U
+    USE_HAL_DRIVER
 )
 target_include_directories(${PROJECT_NAME}.elf PRIVATE inc)
 target_include_directories(${PROJECT_NAME}.elf SYSTEM PRIVATE
     vendor/CMSIS/Core/Include
     vendor/STM32F4/Include
+    vendor/STM32F4_HAL/Inc
+    vendor/STM32_USB_Device/Core/Inc
+    vendor/STM32_USB_Device/Class/CDC/Inc
 )
 # Alteracoes no mapa de memoria tambem precisam disparar a linkedicao.
 set_property(TARGET ${PROJECT_NAME}.elf APPEND PROPERTY LINK_DEPENDS

@@ -6,7 +6,7 @@ Abra a pasta **ELEW32** no VS Code. As tarefas e configuracoes em `.vscode/`
 na raiz usam o codigo em `template/` e geram os novos arquivos em
 `out/build/windows/`, ignorado pelo Git.
 
-O firmware atual da **STM32F411CEU6** configura clock e SysTick (etapa 3), com CMSIS e
+O firmware atual da **STM32F411CEU6** inclui serial USB CDC (etapa 4), com CMSIS e
 gravacao exclusivamente pelo **USB da placa, em modo DFU**. O exemplo da etapa 1 permanece no historico do
 Git. O startup generico e `soma.s` continuam em `template/src/`, mas estao fora
 da lista de compilacao. O build Linux anterior em `template/build/` foi preservado.
@@ -141,7 +141,7 @@ Use o [Zadig oficial](https://zadig.akeo.ie/), selecione exatamente
 2. Execute **DFU: Flash and Verify**. A tarefa compila, grava a Flash interna
    em `0x08000000` e compara o SHA-256 da leitura de volta com o BIN compilado.
 3. Apos a mensagem de sucesso, pressione **RESET** com **BOOT0 solto**.
-4. No firmware atual (etapa 3), confirme que o LED de usuario **PC13** pisca:
+4. No firmware atual, confirme que o LED de usuario **PC13** pisca:
    500 ms aceso e 500 ms apagado. Na etapa 2 ele permanecia aceso.
    O LED de alimentacao sozinho nao confirma a execucao do programa.
 
@@ -169,8 +169,8 @@ O LED acende apenas depois de confirmar `firmware_iniciado == 0` (.bss) e
 Nao ha breakpoints ou inspecao de variaveis por USB DFU: o criterio fisico
 desta etapa e a verificacao da Flash e a confirmacao visual do LED.
 
-Depois do reset, este firmware ainda nao expoe uma porta COM; USB CDC entra
-na etapa 4. Para uma nova gravacao, repita a sequencia BOOT0/RESET para usar
+Nas etapas 2 e 3, o firmware ainda nao expunha uma porta COM. A partir da
+etapa 4, a aplicacao expoe USB CDC. Para uma nova gravacao, repita BOOT0/RESET para usar
 o bootloader de fabrica, que reside na memoria de sistema e permanece disponivel.
 
 ### Validacao da etapa 2
@@ -194,7 +194,7 @@ feat: adiciona firmware minimo para a Black Pill F411
 
 ## Etapa 3: clock de 96 MHz e SysTick de 1 ms
 
-O firmware alterna PC13 a cada 500 ms usando o contador do SysTick. Um ciclo
+Na etapa 3, o firmware alterna PC13 a cada 500 ms usando o contador do SysTick. Um ciclo
 completo (aceso e apagado) dura aproximadamente um segundo. Ainda nao ha
 USB CDC nem interrupcao do botao; a gravacao continua pelo bootloader DFU.
 
@@ -282,4 +282,110 @@ Mensagem de commit sugerida:
 
 ```text
 feat: configura clock e base de tempo com SysTick
+```
+
+## Etapa 4: serial USB CDC
+
+A Black Pill agora expoe uma porta serial pelo proprio conector USB, usando
+**PA11 (D-) e PA12 (D+) em AF10**, com o PHY interno do OTG FS. Nao e necessario
+conectar um adaptador USB/UART. O clock de 48 MHz vem do PLL configurado na
+etapa 3. O LED continua alternando a cada 500 ms.
+
+O firmware usa USB Device **v2.11.3** (nucleo e classe CDC) e HAL STM32F4
+**v1.8.3** (PCD/PCDEx, LL USB e suporte HAL/RCC), da ST. Versoes, origens,
+licencas e hashes dos pacotes estao em [vendor/README.md](template/vendor/README.md).
+As dependencias estao incluidas no repositorio; o build continua sem downloads.
+
+### Organizacao e interrupcoes
+
+| Arquivo da aplicacao | Responsabilidade |
+| --- | --- |
+| `template/src/usb_descriptors.c` | Identidade CDC, strings e numero de serie derivado do UID do chip |
+| `template/src/usb_port.c` | GPIO, periferico OTG FS, FIFOs, adaptacao USBD/PCD e IRQ USB |
+| `template/src/usb_serial.c` | DTR, buffer de transmissao, callbacks CDC e mensagem inicial |
+| `template/src/timebase.c` | Contador unico de 1 ms, compartilhado com o HAL |
+| `template/inc/usbd_conf.h` e `stm32f4xx_hal_conf.h` | Configuracao local das bibliotecas |
+
+O vetor de IRQ 67 (entrada 83, endereco `0x0800014C`) referencia
+`OTG_FS_IRQHandler`, que chama o PCD. Os callbacks entregam os eventos ao
+middleware USB. Essa ligacao segue o mesmo mecanismo de vetor/handler
+estudado na Aula 06. USB tem prioridade 2 e SysTick prioridade 0.
+
+`HAL_GetTick()` retorna `millis()`. Nao chamamos `HAL_Init()` e sobrescrevemos
+`HAL_InitTick()` para preservar a configuracao feita pela aplicacao. Existe
+somente um contador ativo, incrementado uma vez por `SysTick_Handler`.
+As esperas de inicializacao do driver usam essa mesma base de tempo.
+
+A mensagem `Sistema iniciado...` so e enviada quando o dispositivo esta
+configurado pelo host e o terminal ativa **DTR**. Ela aparece uma vez por
+abertura de terminal (transicao de DTR desligado para ligado). Reabrir a porta
+permite ve-la novamente sem reiniciar o microcontrolador; isso nao significa
+que houve novo reset da placa.
+
+`usb_serial_poll()` roda no laco principal. Quando a classe esta ocupada,
+tenta novamente em uma iteracao seguinte. `usb_serial_write()` copia ate 128
+bytes para um buffer estatico proprio e retorna imediatamente. Esse buffer
+so pode ser reutilizado depois de `TxState` voltar a zero, indicando conclusao
+da transferencia pela classe ST (incluindo eventual pacote de tamanho zero).
+O retorno `true` indica envio aceito, nao leitura confirmada pelo terminal.
+
+Durante o acesso compartilhado ao handle e ao buffer, apenas a IRQ USB e
+temporariamente mascarada; SysTick continua funcionando. Nao ha impressao,
+delay de aplicacao nem espera por USB livre nas ISRs. A memoria da classe
+CDC tambem e estatica, sem heap. Dados recebidos do terminal sao descartados,
+e o endpoint de recepcao e rearmado; nao ha interpretador de comandos.
+
+### Gravar e abrir o terminal
+
+1. Entre em DFU com BOOT0/RESET e execute **DFU: Flash and Verify**.
+2. Pressione RESET com BOOT0 solto. O Windows deve reconhecer a serial CDC
+   (`0483:5740`), com um numero COM atribuido pelo sistema.
+3. Execute **USB: Serial Monitor** nas tarefas do VS Code. O script seleciona
+   automaticamente a unica placa CDC conectada e monitora por 60 segundos.
+4. Confira a linha `Sistema iniciado...`. Use Ctrl+C para encerrar antes do prazo.
+
+Tambem e possivel executar na raiz do projeto:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/serial-monitor.ps1
+# Para escolher a porta e o tempo de observacao:
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/serial-monitor.ps1 -Port COM9 -Seconds 30
+```
+
+Substitua `COM9` pela porta efetiva. Feche outro terminal que esteja usando a
+mesma porta antes de iniciar o monitor. A configuracao e 115200, 8N1, sem
+controle de fluxo, **DTR ativo**. Em USB CDC, o baud rate e um parametro
+informado ao dispositivo, sem alterar o clock USB ou configurar uma UART.
+
+O Windows usa o driver de classe serial `usbser` para a aplicacao CDC.
+O WinUSB instalado anteriormente pertence ao **STM32 BOOTLOADER (0483:DF11)**,
+usado apenas durante gravacao. Nao troque o driver da porta CDC pelo Zadig.
+O VID/PID `0483:5740` segue o exemplo CDC da ST para este experimento;
+nao representa uma atribuicao de identificador para um produto proprio.
+
+### Validacao da etapa 4
+
+- Build sem avisos: ELF, HEX, BIN e MAP; 13480 bytes de Flash e 3084 bytes de
+  RAM estatica, alem da pilha em execucao.
+- Inspecao do ELF/BIN confirmou os handlers proprios de SysTick e OTG FS nas
+  entradas corretas da tabela, `HAL_GetTick()` da aplicacao e ausencia de um
+  segundo contador HAL ativo.
+- Firmware gravado por DFU e verificado por leitura de volta com SHA-256 identico.
+- Windows reconheceu **Dispositivo Serial USB (COM9)**, usando o driver `usbser`.
+- Teste na placa com duas aberturas sucessivas da porta: nenhuma mensagem
+  antes de ativar DTR; linha exata `Sistema iniciado...` ao ativar; nenhuma
+  repeticao durante 600 ms de observacao; nova mensagem ao desligar/ligar DTR.
+- Entrada enviada pelo terminal foi descartada sem eco. Fechar e reabrir a
+  porta permitiu receber novamente a mensagem, sem reset do microcontrolador.
+- `scripts/serial-monitor.ps1` testado com selecao automatica da COM9 e janela
+  de 3 segundos: exibiu a mensagem corretamente e liberou a porta ao terminar.
+- Os 30 arquivos adicionados de terceiros foram comparados com os pacotes
+  oficiais e permaneceram identicos. PowerShell/JSON e `git diff --check` validados.
+- Ainda nao houve teste de trafego continuo, desconexao fisica durante envio
+  ou fila de eventos; os eventos e a validacao completa pertencem as etapas seguintes.
+
+Mensagem de commit sugerida:
+
+```text
+feat: adiciona comunicacao serial por USB CDC
 ```

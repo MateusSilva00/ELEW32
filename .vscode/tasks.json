@@ -2,6 +2,13 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "USB: Serial Monitor",
+            "type": "process",
+            "command": "powershell",
+            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/serial-monitor.ps1"],
+            "problemMatcher": []
+        },
+        {
             "label": "DFU: Setup",
             "type": "process",
             "command": "powershell",
