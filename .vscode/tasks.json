@@ -139,14 +139,14 @@
         {
             "id": "question",
             "type": "pickString",
-            "description": "Questao da Atividade 3 (c e d ainda pendentes)",
+            "description": "Questao da Atividade 3 (d ainda pendente)",
             "options": [
                 "a",
                 "b",
                 "c",
                 "d"
             ],
-            "default": "b"
+            "default": "c"
         }
     ]
 }

@@ -1,6 +1,6 @@
 {
-    "cmake.sourceDirectory": "${workspaceFolder}/atividade3/questao_b",
-    "cmake.buildDirectory": "${workspaceFolder}/out/build/questao_b",
+    "cmake.sourceDirectory": "${workspaceFolder}/atividade3/questao_c",
+    "cmake.buildDirectory": "${workspaceFolder}/out/build/questao_c",
     "cmake.generator": "Ninja",
     "cmake.configureSettings": {
         "CMAKE_BUILD_TYPE": "Debug",

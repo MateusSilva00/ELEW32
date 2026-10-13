@@ -1,0 +1,10 @@
+Questao (c), etapa 1 - 13/10/2026
+Captura apos RESET com BOOT0 solto. Usuario confirmou LED de usuario apagado.
+Build ARM GNU 14.2.1 sem avisos: Flash 13568 bytes, RAM estatica 3092 bytes.
+Gravacao DFU verificada por leitura de volta de 13568 bytes.
+SHA256 do BIN e da leitura da Flash:
+142CA86AA6F84C9B87CE61526479F20009BA70E3B7052128D9D90A4A1915B782
+
+Monitor em COM9, 115200 8N1, DTR ativo. Duracao: 5 segundos; Ctrl+C encerra.
+Questao (c): decodificador Morse.
+Etapa 1: base pronta; leitura de USER ainda desabilitada.
