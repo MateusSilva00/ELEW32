@@ -2,7 +2,7 @@
 
 O módulo `morse_logic.c` recebe bordas já validadas e timestamps. Ele mede
 pressões, acumula símbolos e produz uma letra ou erro. Não acessa GPIO,
-EXTI, USB ou o SysTick diretamente. A integração com a placa será a etapa 3.
+EXTI, USB ou o SysTick diretamente. A integração com a placa está no [guia da etapa 3](integracao.md).
 
 ## Convenções deste projeto
 

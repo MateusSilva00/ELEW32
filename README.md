@@ -49,8 +49,8 @@ Na primeira execução dos testes, acrescente `-Setup` para instalar o TCC local
 
 No VS Code, **Ctrl+Shift+B** e as tarefas **CMake: Configure**, **CMake: Clean**
 e **DFU: Flash and Verify** pedem a questão. O painel CMake Tools e o IntelliSense estão
-configurados para (c), projeto em desenvolvimento; a seleção das tarefas não
-altera a seleção desse painel. Para usar o painel com (a) ou (b), ajuste os caminhos
+configurados para (c); a seleção das tarefas não altera a seleção desse
+painel. Para usar o painel com outra questão, ajuste os caminhos
 `cmake.sourceDirectory` e `cmake.buildDirectory` em `.vscode/settings.json`.
 Os exemplos abaixo continuam explícitos para (a); use `-Question b`, `c` ou `d`
 para as demais. Os testes C de (b), (c) e (d) usam `scripts/test-reaction.ps1`,

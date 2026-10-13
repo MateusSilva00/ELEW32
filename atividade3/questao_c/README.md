@@ -138,10 +138,10 @@ Validação em 13/10/2026: testes C aprovados para as 26 letras, limiares
 10 mil símbolos consecutivos, wrap e reinicialização. Consulte a
 [saída dos testes](docs/evidencias/etapa-2-testes-c.txt).
 
-O ARM GCC compilou o módulo sem avisos. Ele ainda não é chamado pelo `main`,
-portanto o linker remove o código não utilizado. O BIN é idêntico à leitura
-da Flash da etapa 1, com o mesmo SHA-256 e tamanho. Não houve nova gravação
-ou teste físico nesta etapa; USER ainda não insere Morse na placa.
+Na etapa 2, o ARM GCC compilou o módulo sem avisos. Ele ainda não era chamado
+pelo `main`, e o linker removia o código não utilizado. Naquele commit, o BIN
+permaneceu idêntico à leitura da Flash da etapa 1, sem nova gravação ou teste
+físico; a entrada pelo USER foi integrada na etapa 3.
 
 ## Etapa 3 — Integração com a placa
 
