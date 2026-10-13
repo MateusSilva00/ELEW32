@@ -1,8 +1,9 @@
 # Questão (b) — Tempo de reação
 
-**Em desenvolvimento — etapa 3.** O teste de reação está integrado ao botão
-USER por EXTI0, ao LED PC13 e à serial USB CDC. As rodadas usam espera variável
-de 2 a 5 segundos e debounce de 30 ms. A etapa 4 consolidará a validação final.
+**Implementada e validada.** O teste de reação usa USER por EXTI0, LED PC13 e
+serial USB CDC, com espera variável de 2 a 5 segundos e debounce de 30 ms.
+Consulte a [validação final e suas evidências](docs/validacao-final.md), que
+distingue verificações no computador dos testes efetivamente feitos na placa.
 
 Conforme o [enunciado](../../Enunciado.pdf), o sistema deve anunciar que está
 pronto, aguardar alguns segundos sem revelar o instante exato do estímulo e
@@ -175,4 +176,18 @@ pelo usuário. Um clique antecipado em uma rodada seguinte produziu
 
 Os tempos registrados incluem pausas para seguir as instruções; não são uma
 avaliação da rapidez do usuário. A matriz final de testes, incluindo boot
-com USER apertado e reconexão física, fica para a etapa 4.
+com USER apertado e reconexão física, está na etapa 4 abaixo.
+
+## Etapa 4 — Validação final
+
+Firmware do commit **4aee86a**, validado em 13/10/2026. Uma compilação limpa
+em `out/build/questao_b-final/` terminou sem avisos e gerou BIN idêntico à
+leitura da Flash da etapa 3. Os testes C passaram novamente. Nenhum fonte
+do firmware foi alterado e não houve nova gravação nesta etapa.
+
+Na placa, foram confirmados: inicialização com USER pressionado sem emitir
+estímulo; recuperação após soltura; cancelamento ao fechar o terminal;
+reabertura sem RESET; e reconexão física USB com nova tentativa válida.
+Os testes anteriores de antecipação e pressão mantida também estão incluídos
+na [matriz final](docs/validacao-final.md), junto dos limites da validação e
+da relação com CMSIS, EXTI, NVIC e SysTick da Aula 06.

@@ -1,0 +1,14 @@
+Questao (b), etapa 4 - 13/10/2026
+Firmware: commit 4aee86a.
+Usuario reiniciou segurando USER com BOOT0 solto e confirmou LED apagado enquanto segurava.
+Captura abriu nesse estado e recebeu somente identificacao/prontidao inicialmente.
+Depois o usuario soltou, aguardou LED acender e clicou: 1368 ms.
+Monitor encerrado no estimulo seguinte. Usuario confirmou LED apagado por pelo menos 5 s.
+
+Monitor em COM9, 115200 8N1, DTR ativo. Duracao: 600 segundos; Ctrl+C encerra.
+Questao (b): teste de reacao.
+Teste pronto. Solte USER e aguarde o LED acender.
+LED aceso! Pressione USER.
+Tempo de reacao: 1368 ms
+Teste pronto. Solte USER e aguarde o LED acender.
+LED aceso! Pressione USER.

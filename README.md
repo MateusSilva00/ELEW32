@@ -6,13 +6,13 @@ USB da própria placa. Requisitos: [Enunciado.pdf](Enunciado.pdf).
 | Questão | Projeto | Situação |
 | --- | --- | --- |
 | (a) | [Contador de pressionamentos](atividade3/questao_a/README.md) | Implementado e validado |
-| (b) | [Tempo de reação](atividade3/questao_b/README.md) | Etapa 3: botão, LED e USB integrados |
+| (b) | [Tempo de reação](atividade3/questao_b/README.md) | Implementado e validado |
 | (c) | [Decodificador Morse](atividade3/questao_c/README.md) | A implementar |
 | (d) | [Sequência rítmica](atividade3/questao_d/README.md) | A implementar |
 
 Cada questão terá seus próprios fontes, testes e documentação. A questão (a)
 já contém `src/`, `inc/`, `tests/`, `docs/` e `CMakeLists.txt`. A questão (b)
-tem seu firmware básico independente e testes da lógica de reação. As pastas (c) e (d) contêm o escopo
+tem firmware independente, testes e evidências de validação. As pastas (c) e (d) contêm o escopo
 de cada projeto; ainda não geram firmware.
 
 ## Estrutura compartilhada

@@ -1,0 +1,8 @@
+Questao (b), etapa 4 - 13/10/2026
+Reabertura sem RESET ou desconexao fisica, apos cancelamento ao fechar o monitor anterior.
+Captura de 15 s encerrada normalmente; nenhum clique foi solicitado nesta janela.
+
+Monitor em COM9, 115200 8N1, DTR ativo. Duracao: 15 segundos; Ctrl+C encerra.
+Questao (b): teste de reacao.
+Teste pronto. Solte USER e aguarde o LED acender.
+LED aceso! Pressione USER.

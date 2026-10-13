@@ -1,0 +1,28 @@
+Questao (b), etapa 4 - 13/10/2026
+Firmware do commit 4aee86a, sem alteracoes nesta etapa.
+
+Build em pasta nova:
+cmake -S atividade3/questao_b -B out/build/questao_b-final -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+cmake --build out/build/questao_b-final
+
+ARM GNU 14.2.1, 23 etapas concluidas, sem avisos.
+FLASH: 15436 B / 512 KB
+RAM estatica: 3144 B / 128 KB
+text=15216 data=220 bss=2924
+ELF, HEX, BIN e MAP gerados.
+SHA256 do BIN novo e da leitura de Flash preservada da etapa 3:
+A6F11EB7C0CE481797778459E3D4011DF30A062A7BB46B2C77B57466E62BD064
+
+Testes nativos repetidos:
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-reaction.ps1
+
+PASS: prazo, estimulo real e resultado de 284 ms retido
+PASS: antecipacao, entrega tardia e rejeicao de eventos antigos
+PASS: reacao de 0 ms e wrap de uint32_t na espera/reacao/antecipacao
+PASS: reset/cancelamento e 50000 rodadas com espera entre 2000 e 5000 ms
+PASS: debounce 29/30 ms, bouncing, boot pressionado e antecipacao no prazo
+PASS: serial em ordem, USB ocupado/abortado, timestamp e botao mantido
+PASS: Muito cedo, cancelamento/reabertura e conclusao USB de sessao antiga
+
+Testes C usam os fontes reais com tempo/placa/transporte simulados.
+Nao houve nova gravacao: o BIN e identico ao firmware verificado anteriormente.

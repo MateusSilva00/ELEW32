@@ -106,4 +106,6 @@ espera pelas instruções. Não representam um ensaio de rapidez humana nem
 uma medição independente da exatidão temporal. Não houve osciloscópio ou
 analisador lógico. Os casos de bouncing controlado, wrap, falha USB e corrida
 no mesmo tick foram [testados em C](evidencias/etapa-3-testes-c.txt), não
-injetados fisicamente na placa. A validação final ampliada fica para a etapa 4.
+injetados fisicamente na placa. A [validação final da etapa 4](validacao-final.md)
+acrescenta boot com USER pressionado, fechamento/reabertura do terminal e
+reconexão física USB, com as respectivas evidências.
