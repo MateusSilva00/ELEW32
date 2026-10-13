@@ -10,6 +10,7 @@ static uint8_t rx_buffer[CDC_DATA_FS_MAX_PACKET_SIZE];
 static uint8_t tx_buffer[USB_SERIAL_TX_CAPACITY];
 static uint8_t line_coding[7] = {0x00, 0xC2, 0x01, 0x00, 0, 0, 8}; /* 115200 8N1 */
 static volatile bool terminal_open;
+static volatile uint32_t session_id;
 static volatile bool greeting_pending;
 static volatile usb_serial_tx_result_t app_result;
 
@@ -70,6 +71,7 @@ static int8_t cdc_control(uint8_t command, uint8_t *buffer, uint16_t length)
         bool dtr = (request->wValue & 1U) != 0U;
         if (dtr && !terminal_open) {
             greeting_pending = true;
+            if (++session_id == 0U) { ++session_id; }
         }
         terminal_open = dtr;
         break;
@@ -172,11 +174,18 @@ usb_serial_tx_result_t usb_serial_take_result(void)
     return result;
 }
 
+uint32_t usb_serial_session(void)
+{
+    uint32_t enabled = lock_usb();
+    uint32_t result = terminal_open && device.dev_state == USBD_STATE_CONFIGURED ? session_id : 0U;
+    unlock_usb(enabled);
+    return result;
+}
+
 void usb_serial_poll(void)
 {
     static const char greeting[] =
-        "Questao (b): base pronta.\r\n"
-        "Etapa 1: LED apagado; medicao ainda nao habilitada.\r\n";
+        "Questao (b): teste de reacao.\r\n";
     uint32_t enabled = lock_usb();
     if (greeting_pending && write_locked(greeting, sizeof(greeting) - 1U)) {
         greeting_pending = false;

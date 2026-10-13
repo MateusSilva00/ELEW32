@@ -6,6 +6,9 @@ include(../../plataforma/stm32f411/firmware.cmake)
 stm32f411_add_firmware(${PROJECT_NAME}
     src/main.c
     src/reaction_logic.c
+    src/reaction_control.c
+    src/reaction_board.c
+    src/reaction_report.c
     src/clock.c
     src/timebase.c
     src/runtime.c

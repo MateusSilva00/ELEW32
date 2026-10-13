@@ -2,6 +2,8 @@
 #include "clock.h"
 #include "timebase.h"
 #include "usb_serial.h"
+#include "reaction_board.h"
+#include "reaction_report.h"
 
 /* O startup limpa .bss antes de chamar main. */
 volatile uint32_t firmware_iniciado;
@@ -28,12 +30,13 @@ int main(void)
             __NOP(); /* Falha de inicializacao: nao anuncia prontidao. */
         }
     }
+    reaction_board_init();
     firmware_iniciado = 1U;
 
     while (1) {
-        /* Envia a identificacao quando o terminal abre com DTR ativo.
-         * Nesta etapa nao ha rodada, leitura de botao nem medicao de reacao. */
+        /* Toda formatacao/transmissao ocorre no main, sem bloquear ISRs. */
         usb_serial_poll();
+        reaction_report_poll();
         __WFI();
     }
 }

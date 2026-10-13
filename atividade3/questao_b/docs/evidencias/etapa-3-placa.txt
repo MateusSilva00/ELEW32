@@ -1,0 +1,24 @@
+Questao (b), etapa 3 - 13/10/2026
+Captura real da COM9; usuario confirmou tres tentativas, terceira mantida por cerca de 5 s.
+Depois fez um clique de preparacao e um clique antecipado.
+Os tempos longos incluem a espera pelas instrucoes; nao sao referencia de desempenho humano.
+Gravacao e leitura DFU com SHA256 A6F11EB7C0CE481797778459E3D4011DF30A062A7BB46B2C77B57466E62BD064.
+
+Monitor em COM9, 115200 8N1, DTR ativo. Duracao: 600 segundos; Ctrl+C encerra.
+Questao (b): teste de reacao.
+Teste pronto. Solte USER e aguarde o LED acender.
+LED aceso! Pressione USER.
+Tempo de reacao: 27245 ms
+Teste pronto. Solte USER e aguarde o LED acender.
+LED aceso! Pressione USER.
+Tempo de reacao: 2448 ms
+Teste pronto. Solte USER e aguarde o LED acender.
+LED aceso! Pressione USER.
+Tempo de reacao: 1822 ms
+Teste pronto. Solte USER e aguarde o LED acender.
+LED aceso! Pressione USER.
+Tempo de reacao: 163523 ms
+Teste pronto. Solte USER e aguarde o LED acender.
+Muito cedo!
+Teste pronto. Solte USER e aguarde o LED acender.
+LED aceso! Pressione USER.

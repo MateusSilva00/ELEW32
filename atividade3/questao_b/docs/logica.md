@@ -88,6 +88,7 @@ de emitir o estímulo, para não transformar uma antecipação em reação váli
    e conclusão de envio. Desligar o LED ao concluir/cancelar e exigir soltura
    estável antes de uma nova rodada.
 
-Essas integrações ainda não estão implementadas. Os testes desta etapa
-fornecem timestamps simulados diretamente ao módulo; não comprovam debounce,
-concorrência de interrupções, temporização elétrica ou comportamento do USB.
+Esse contrato foi implementado na etapa 3 por `reaction_control.c`,
+`reaction_board.c` e `reaction_report.c`; consulte o [guia da integração](integracao.md).
+Os testes da etapa 2 fornecem timestamps simulados diretamente ao módulo;
+não comprovam concorrência de interrupções ou temporização elétrica.

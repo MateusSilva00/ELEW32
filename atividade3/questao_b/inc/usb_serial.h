@@ -16,6 +16,9 @@ typedef enum {
 /* Inicializar depois do clock e da base de tempo. As APIs sao para o main. */
 bool usb_serial_init(void);
 void usb_serial_poll(void);
+/* Zero sem terminal configurado/DTR. ID muda a cada abertura, inclusive
+ * se fechar e reabrir entre duas iteracoes do main. */
+uint32_t usb_serial_session(void);
 /* Copia os dados para buffer proprio; false = ocupado/sem terminal/tamanho invalido.
  * true indica transferencia aceita, nao confirma leitura pelo terminal.
  * Consumir DONE/ABORTED com take_result antes de iniciar outro write. */

@@ -1,0 +1,14 @@
+Questao (b), etapa 3 - 13/10/2026
+Comando: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-reaction.ps1
+Compilador nativo: Tiny C Compiler 0.9.27, -std=c11 -Wall -Wextra -Werror
+
+PASS: prazo, estimulo real e resultado de 284 ms retido
+PASS: antecipacao, entrega tardia e rejeicao de eventos antigos
+PASS: reacao de 0 ms e wrap de uint32_t na espera/reacao/antecipacao
+PASS: reset/cancelamento e 50000 rodadas com espera entre 2000 e 5000 ms
+PASS: debounce 29/30 ms, bouncing, boot pressionado e antecipacao no prazo
+PASS: serial em ordem, USB ocupado/abortado, timestamp e botao mantido
+PASS: Muito cedo, cancelamento/reabertura e conclusao USB de sessao antiga
+
+Logica, debounce e consumidor USB reais, com placa/tempo/transporte simulados.
+Nao simula os registradores STM32, prioridades NVIC ou middleware USB ST.

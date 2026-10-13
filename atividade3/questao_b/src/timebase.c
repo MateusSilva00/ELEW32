@@ -1,6 +1,7 @@
 #include "timebase.h"
 #include "stm32f4xx.h"
 #include "stm32f4xx_hal.h"
+#include "reaction_board.h"
 
 /* Compartilhado entre ISR e main; leitura alinhada de 32 bits e atomica no M4. */
 static volatile uint32_t milliseconds;
@@ -42,4 +43,5 @@ HAL_StatusTypeDef HAL_InitTick(uint32_t priority)
 void SysTick_Handler(void)
 {
     ++milliseconds;
+    reaction_board_tick(milliseconds);
 }

@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include "reaction_logic.h"
+void test_reaction_integration(void);
 
 static uint32_t start(reaction_logic_t *state, uint32_t now)
 {
@@ -138,5 +139,6 @@ int main(void)
     puts("PASS: reacao de 0 ms e wrap de uint32_t na espera/reacao/antecipacao");
     test_reset_and_sequence();
     puts("PASS: reset/cancelamento e 50000 rodadas com espera entre 2000 e 5000 ms");
+    test_reaction_integration();
     return 0;
 }

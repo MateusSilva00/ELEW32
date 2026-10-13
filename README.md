@@ -6,7 +6,7 @@ USB da própria placa. Requisitos: [Enunciado.pdf](Enunciado.pdf).
 | Questão | Projeto | Situação |
 | --- | --- | --- |
 | (a) | [Contador de pressionamentos](atividade3/questao_a/README.md) | Implementado e validado |
-| (b) | [Tempo de reação](atividade3/questao_b/README.md) | Etapa 2: lógica testada; integração pendente |
+| (b) | [Tempo de reação](atividade3/questao_b/README.md) | Etapa 3: botão, LED e USB integrados |
 | (c) | [Decodificador Morse](atividade3/questao_c/README.md) | A implementar |
 | (d) | [Sequência rítmica](atividade3/questao_d/README.md) | A implementar |
 

@@ -1,9 +1,8 @@
 # Questão (b) — Tempo de reação
 
-**Em desenvolvimento — etapa 2.** A lógica do teste de reação está implementada
-e testada em C no computador. A integração com botão, LED e mensagens será
-feita na etapa 3. Por enquanto, o firmware executa a base da etapa 1: clock,
-SysTick e USB CDC, mantendo o LED de usuário apagado.
+**Em desenvolvimento — etapa 3.** O teste de reação está integrado ao botão
+USER por EXTI0, ao LED PC13 e à serial USB CDC. As rodadas usam espera variável
+de 2 a 5 segundos e debounce de 30 ms. A etapa 4 consolidará a validação final.
 
 Conforme o [enunciado](../../Enunciado.pdf), o sistema deve anunciar que está
 pronto, aguardar alguns segundos sem revelar o instante exato do estímulo e
@@ -34,7 +33,7 @@ informar `Muito cedo!`.
 
 Uma etapa por vez: o usuário faz o commit antes de avançarmos.
 
-## Compilar a etapa 1
+## Compilar
 
 Na raiz `ELEW32`, com ARM GCC, CMake e Ninja no PATH:
 
@@ -52,9 +51,9 @@ de (a), no commit `5e67867`, para permitir evolução independente. Não há
 referências aos fontes de (a) na compilação de (b).
 
 Mantemos HSE presumido de 25 MHz, CPU de 96 MHz e USB de 48 MHz. O SysTick
-atualiza somente o contador de milissegundos, também consultado por HAL_GetTick.
-PA11/PA12 atendem USB; PC13 é saída ativa em nível baixo e permanece apagada.
-Nesta etapa PA0/EXTI0 ainda não são configurados.
+atualiza o contador de milissegundos, também consultado por HAL_GetTick,
+valida o debounce e aciona o estímulo quando a espera vence. PA11/PA12 atendem
+USB; PC13 é saída ativa em nível baixo. PA0/EXTI0 detecta as duas bordas de USER.
 
 ## Gravar e observar
 
@@ -66,7 +65,7 @@ dfu-util já foram preparados nas etapas de (a).
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/project.ps1 -Question b -Action Flash
 ```
 
-O script compila e grava o BIN de (b), substituindo o firmware de (a) na
+O script compila e grava o BIN de (b), substituindo o firmware anterior na
 Flash da placa, e confere a leitura de volta. Após o sucesso, pressione RESET
 com BOOT0 solto e abra o monitor:
 
@@ -77,14 +76,21 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/serial-monitor.ps1
 Com DTR ativo, o esperado é:
 
 ```text
-Questao (b): base pronta.
-Etapa 1: LED apagado; medicao ainda nao habilitada.
+Questao (b): teste de reacao.
+Teste pronto. Solte USER e aguarde o LED acender.
+LED aceso! Pressione USER.
+Tempo de reacao: 284 ms
 ```
 
-O LED de alimentação permanece aceso; o LED de usuário deve ficar apagado.
-Reabrir o terminal reapresenta a identificação. Ainda não há rodada nem
-mensagem de tempo de reação ao apertar USER. O número da porta COM é
-descoberto pelo monitor; não se presume que continuará sendo COM9.
+O valor de 284 ms acima é apenas exemplo de formato. Pressione USER quando
+o LED de usuário acender. Se pressionar durante a espera, recebe `Muito cedo!`.
+Após o resultado, o LED apaga e há uma pausa de 2 segundos antes do anúncio
+da próxima rodada. A espera só começa após transmissão do anúncio e soltura
+estável de USER. Manter o botão pressionado não repete o resultado.
+
+Sem terminal aberto com DTR ativo, nenhuma rodada começa. Fechar o terminal
+cancela a rodada e apaga o LED; reabri-lo anuncia um novo teste. O número da
+porta COM é descoberto pelo monitor. O LED de alimentação continua aceso.
 
 ## Validação da etapa 1
 
@@ -139,8 +145,34 @@ por zero. Foram executadas também 50000 rodadas, verificando os limites de
 2000 e 5000 ms e a variação/reprodutibilidade da sequência. A saída está
 registrada em [evidências dos testes C](docs/evidencias/etapa-2-testes-c.txt).
 
-O módulo também foi compilado pelo ARM GCC, sem avisos. Ainda não é chamado
-pelo `main`, portanto o linker remove suas funções não utilizadas. O BIN
-permanece idêntico à leitura da Flash da etapa 1, com o SHA-256 registrado
-acima e os mesmos tamanhos de Flash/RAM. Não houve nova gravação ou teste
-físico nesta etapa; o terminal continua mostrando a identificação da base.
+Na etapa 2, o módulo também foi compilado pelo ARM GCC, sem avisos. Ainda não
+era chamado pelo `main`, e o linker removia suas funções não utilizadas.
+Naquele commit, o BIN permaneceu idêntico à leitura da Flash da etapa 1,
+sem nova gravação ou teste físico.
+
+## Etapa 3 — Integração com a placa
+
+O [guia da integração](docs/integracao.md) descreve EXTI0, SysTick, debounce,
+acionamento do LED, mensagens e cancelamento ao fechar o terminal. A lógica
+de debounce e o envio foram acrescentados à tarefa **Questao (b): Reaction
+Tests**, que continua executada por `scripts/test-reaction.ps1`.
+
+Compilação sem avisos e gravação DFU verificada: **15436 bytes de Flash** e
+**3144 bytes de RAM estática**, além da pilha em execução. O SHA-256 do BIN
+e da leitura de volta é:
+
+```text
+A6F11EB7C0CE481797778459E3D4011DF30A062A7BB46B2C77B57466E62BD064
+```
+
+Os testes em C passaram, incluindo debounce, borda no prazo, USB ocupado,
+aborto de transmissão e troca de sessão. Na placa, a COM9 registrou três
+resultados para as três tentativas solicitadas, sem repetição durante o
+terceiro pressionamento, mantido por cerca de 5 segundos conforme informado
+pelo usuário. Um clique antecipado em uma rodada seguinte produziu
+`Muito cedo!`. As [evidências da placa](docs/evidencias/etapa-3-placa.txt) e dos
+[testes C](docs/evidencias/etapa-3-testes-c.txt) foram preservadas.
+
+Os tempos registrados incluem pausas para seguir as instruções; não são uma
+avaliação da rapidez do usuário. A matriz final de testes, incluindo boot
+com USER apertado e reconexão física, fica para a etapa 4.

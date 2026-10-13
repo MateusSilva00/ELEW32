@@ -26,7 +26,10 @@ $testExecutable = Join-Path $testDirectory 'test-reaction.exe'
 & $Compiler -std=c11 -Wall -Wextra -Werror `
     -I (Join-Path $projectRoot 'atividade3/questao_b/inc') `
     (Join-Path $projectRoot 'atividade3/questao_b/tests/test_reaction.c') `
+    (Join-Path $projectRoot 'atividade3/questao_b/tests/test_reaction_integration.c') `
     (Join-Path $projectRoot 'atividade3/questao_b/src/reaction_logic.c') `
+    (Join-Path $projectRoot 'atividade3/questao_b/src/reaction_control.c') `
+    (Join-Path $projectRoot 'atividade3/questao_b/src/reaction_report.c') `
     -o $testExecutable
 if ($LASTEXITCODE -ne 0) { throw 'Falha ao compilar os testes C.' }
 & $testExecutable
