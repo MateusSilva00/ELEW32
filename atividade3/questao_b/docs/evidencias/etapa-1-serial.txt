@@ -1,0 +1,12 @@
+Questao (b), etapa 1 - 13/10/2026
+Comando: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/serial-monitor.ps1 -Seconds 5
+Captura apos RESET com BOOT0 solto:
+
+Monitor em COM9, 115200 8N1, DTR ativo. Duracao: 5 segundos; Ctrl+C encerra.
+Questao (b): base pronta.
+Etapa 1: LED apagado; medicao ainda nao habilitada.
+
+Observacao visual informada pelo usuario: LED de usuario apagado.
+Gravacao DFU verificada por leitura de volta de 13536 bytes.
+SHA256 do BIN e da leitura da Flash:
+AD9352220718A774DEC3C730ECAEEB26547EF21EF14CA78FDBFC83AF5732BF96

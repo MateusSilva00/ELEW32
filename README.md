@@ -6,13 +6,14 @@ USB da própria placa. Requisitos: [Enunciado.pdf](Enunciado.pdf).
 | Questão | Projeto | Situação |
 | --- | --- | --- |
 | (a) | [Contador de pressionamentos](atividade3/questao_a/README.md) | Implementado e validado |
-| (b) | [Tempo de reação](atividade3/questao_b/README.md) | A implementar |
+| (b) | [Tempo de reação](atividade3/questao_b/README.md) | Etapa 1: base compilável; medição pendente |
 | (c) | [Decodificador Morse](atividade3/questao_c/README.md) | A implementar |
 | (d) | [Sequência rítmica](atividade3/questao_d/README.md) | A implementar |
 
 Cada questão terá seus próprios fontes, testes e documentação. A questão (a)
-já contém `src/`, `inc/`, `tests/`, `docs/` e `CMakeLists.txt`. As outras pastas
-contêm o escopo de cada projeto; ainda não geram firmware.
+já contém `src/`, `inc/`, `tests/`, `docs/` e `CMakeLists.txt`. A questão (b)
+tem seu firmware básico independente. As pastas (c) e (d) contêm o escopo
+de cada projeto; ainda não geram firmware.
 
 ## Estrutura compartilhada
 
@@ -20,12 +21,13 @@ contêm o escopo de cada projeto; ainda não geram firmware.
   que integra os fontes da questão ao startup, CMSIS, HAL e USB CDC.
 - [vendor/](vendor/README.md): dependências com versões, origens e licenças registradas.
 - `scripts/`: compilação por questão, gravação DFU e monitor serial.
-- `out/build/questao_a/`: artefatos da questão (a); as próximas usarão
-  `questao_b/`, `questao_c/` e `questao_d/`. Todo `out/` é ignorado pelo Git.
+- `out/build/questao_a/` e `out/build/questao_b/`: artefatos separados por
+  projeto; as próximas usarão `questao_c/` e `questao_d/`. Todo `out/` é ignorado pelo Git.
 - [template/](template/README.md): arquivos antigos preservados.
 
-Os adaptadores USB, clock, SysTick e lógica da aplicação permanecem nos fontes
-da questão (a). A infraestrutura compartilhada não depende dos fontes dela.
+Os adaptadores USB, clock, SysTick e lógica da aplicação ficam nos fontes
+de cada questão. A base de (b) foi copiada de (a), sem dependência entre elas.
+As bibliotecas da ST e a infraestrutura CMake continuam compartilhadas.
 Cada projeto terá seu próprio `main` e será gravado separadamente na placa;
 gravar uma questão substitui o firmware anterior.
 
@@ -48,8 +50,10 @@ Na primeira execução dos testes, acrescente `-Setup` para instalar o TCC local
 No VS Code, **Ctrl+Shift+B** e as tarefas **CMake: Configure**, **CMake: Clean**
 e **DFU: Flash and Verify** pedem a questão. Se ela ainda não tiver firmware,
 o comando informa isso e termina. O painel CMake Tools e o IntelliSense estão
-configurados para (a), único projeto implementado; a seleção das tarefas não
-altera a seleção desse painel.
+configurados para (b), projeto em desenvolvimento; a seleção das tarefas não
+altera a seleção desse painel. Para usar o painel com (a), ajuste os caminhos
+`cmake.sourceDirectory` e `cmake.buildDirectory` em `.vscode/settings.json`.
+Os exemplos abaixo continuam explícitos para (a); use `-Question b` para (b).
 
 Para preparar o dfu-util uma vez, listar a placa em DFU e compilar/gravar (a):
 
