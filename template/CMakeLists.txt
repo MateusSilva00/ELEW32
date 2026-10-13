@@ -40,6 +40,8 @@ add_executable(${PROJECT_NAME}.elf
     src/main.c
     src/clock.c
     src/timebase.c
+    src/button.c
+    src/button_trace.c
     src/runtime.c
     src/usb_serial.c
     src/usb_descriptors.c

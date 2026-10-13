@@ -6,7 +6,7 @@ Abra a pasta **ELEW32** no VS Code. As tarefas e configuracoes em `.vscode/`
 na raiz usam o codigo em `template/` e geram os novos arquivos em
 `out/build/windows/`, ignorado pelo Git.
 
-O firmware atual da **STM32F411CEU6** inclui serial USB CDC (etapa 4), com CMSIS e
+O firmware atual da **STM32F411CEU6** detecta o botao por EXTI0 (etapa 5), com CMSIS e
 gravacao exclusivamente pelo **USB da placa, em modo DFU**. O exemplo da etapa 1 permanece no historico do
 Git. O startup generico e `soma.s` continuam em `template/src/`, mas estao fora
 da lista de compilacao. O build Linux anterior em `template/build/` foi preservado.
@@ -388,4 +388,104 @@ Mensagem de commit sugerida:
 
 ```text
 feat: adiciona comunicacao serial por USB CDC
+```
+
+## Etapa 5: bordas do botao por EXTI0
+
+O botao USER/KEY usa **PA0, ativo em nivel baixo**: solto lemos 1;
+pressionado lemos 0. O projeto usa o mapeamento KEY/PA0 documentado pela
+[WeAct](https://github.com/WeActStudio/WeActStudio.MiniSTM32F4x1/tree/master/Hardware).
+Use o botao USER/KEY, separado dos botoes BOOT0 e RESET.
+
+`template/src/button.c` configura GPIO, SYSCFG, EXTI e NVIC usando CMSIS e
+registradores. Nenhum handler HAL de GPIO participa da deteccao do botao.
+O USB da etapa 4 continua em PA11/PA12 e o LED continua piscando.
+
+### Caminho do sinal ate o handler
+
+1. Habilitamos os clocks de GPIOA e SYSCFG e configuramos PA0 como entrada
+   com pull-up, preservando os outros pinos do mesmo porto.
+2. `SYSCFG->EXTICR[0]` seleciona PA0 para a linha EXTI0. Isso escolhe qual
+   porta alimenta a linha 0; nao habilita a interrupcao sozinho.
+3. `EXTI->FTSR` e `EXTI->RTSR` habilitam descida e subida, respectivamente.
+   `EXTI->IMR` libera a solicitacao de interrupcao dessa linha.
+4. `NVIC_EnableIRQ(EXTI0_IRQn)` habilita IRQ 6. Sua entrada na tabela e a
+   **22**, no endereco `0x08000058`: as 16 primeiras entradas sao do nucleo.
+5. O simbolo `EXTI0_IRQHandler` substitui o alias fraco do startup. O handler
+   verifica PR0 e escreve **1** nele para reconhecer/limpar a pendencia (W1C).
+   Usamos atribuicao direta, evitando limpar pendencias de outras linhas
+   com uma operacao `|=` nesse registrador.
+6. A ISR registra nivel lido, instante retornado por `millis()` e numero de
+   atendimentos. Nao imprime, nao espera pelo USB e nao executa delay.
+
+Esse fluxo aplica GPIO/SYSCFG/EXTI, NVIC e tabela de vetores apresentados na
+Aula 06 do professor. As prioridades sao SysTick=0, EXTI0=1 e USB=2, portanto
+o tick pode interromper o atendimento do botao, e o botao pode interromper USB.
+
+`button_snapshot()` copia os tres campos do ultimo registro com apenas a IRQ
+EXTI0 temporariamente desabilitada. SysTick e USB continuam funcionando.
+`volatile` garante acessos a memoria, mas nao tornaria sozinho a copia de
+varios campos coerente entre ISR e main.
+
+### Observar pelo USB
+
+Como usamos apenas o cabo USB, a observacao acontece pelo terminal, sem
+inspecao ao vivo no depurador. Execute **USB: Serial Monitor** e pressione e
+solte USER/KEY, mantendo cada estado por cerca de dois segundos no primeiro
+teste. A formatacao e o envio ficam em `button_trace_poll()`, chamado pelo main.
+
+Exemplo ilustrativo, ainda sem debounce:
+
+```text
+Sistema iniciado...
+Botao: PA0=1 (solto), irq=0, t=24 ms, delta=0
+Botao: PA0=0 (pressionado), irq=1, t=2387 ms, delta=1
+Botao: PA0=1 (solto), irq=4, t=4390 ms, delta=3
+```
+
+- `irq`: total de atendimentos da EXTI0 desde a inicializacao, **nao total de cliques**.
+- `t`: instante do atendimento da ultima interrupcao, com resolucao de 1 ms.
+  No registro inicial (`irq=0`), e o instante de inicializacao do botao.
+- `delta`: atendimentos desde o ultimo registro aceito para transmissao USB.
+  Valores maiores que 1 mostram que ocorreram outros atendimentos entre envios.
+
+Ainda nao existe fila: o main observa o ultimo registro disponivel e tenta
+envia-lo quando o USB estiver livre. Registros intermediarios podem ser
+substituidos, inclusive enquanto o terminal estiver fechado. Ao reabrir,
+a mensagem de inicio reaparece; o diagnostico do botao so reaparece se houver
+registro ainda nao enviado ou uma nova interrupcao.
+
+Uma pressao/soltura mecanica pode produzir varias bordas por bouncing. O
+contador pode evidenciar essas oscilacoes, mas esta etapa nao captura todas
+as bordas fisicas: EXTI tem um bit de pendencia, nao uma fila, e a ISR amostra
+o nivel atual. O timestamp e do atendimento, nao de captura por hardware.
+Varias interrupcoes no mesmo milissegundo tambem podem ter timestamps iguais.
+
+O debounce de 30 ms, a contagem definitiva de pressionamentos e a fila de 32
+eventos serao adicionados na etapa 6. Este diagnostico bruto e temporario.
+
+### Validacao da etapa 5
+
+- Compilacao sem avisos: ELF, HEX, BIN e MAP; 14192 bytes de Flash e 3100 bytes
+  de RAM estatica, alem da pilha em execucao.
+- ELF/BIN inspecionados: vetor 22 aponta para o handler proprio de EXTI0;
+  SysTick e OTG FS continuam nos vetores corretos. A desmontagem da ISR mostra
+  reconhecimento de PR0, leitura de PA0, consulta ao tick e incremento do contador.
+- Firmware gravado por USB DFU e verificado por leitura de volta (SHA-256 identico).
+- Na COM9, o registro inicial confirmou PA0=1 (solto), `irq=0`.
+- A captura fisica registrou oito interrupcoes: quatro pares de pressao
+  (PA0=0) e soltura (PA0=1), com `delta=1` em cada registro. Timestamps em ms:
+  `75547/79017`, `83399/88393`, `92885/97375` e `101391/105199`.
+- Nao houve registros adicionais durante os intervalos mantidos pressionados,
+  de aproximadamente 3,5 a 5 segundos. O teste confirmou o mapeamento e a
+  polaridade do botao na placa utilizada.
+- Nao foram observadas bordas adicionais por bouncing nessa captura. Isso
+  nao demonstra ausencia de bouncing fisico nem substitui o debounce da etapa 6.
+- Registro local da captura: `out/button-exti-stage5.log` (ignorado pelo Git).
+  Validacao por terminal USB; nao houve inspecao por depurador ou osciloscopio.
+
+Mensagem de commit sugerida:
+
+```text
+feat: detecta bordas do botao por EXTI0
 ```
