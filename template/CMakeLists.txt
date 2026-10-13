@@ -20,28 +20,42 @@ add_compile_options(
     -ffunction-sections
     -Wall
     -g3
+    $<$<CONFIG:Debug>:-Og>
 )
 
 # Linker options
 add_link_options(
     ${MCU_FLAGS}
+    -nostartfiles
     -Wl,--gc-sections
     -Wl,--print-memory-usage
+    "-Wl,-Map=${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.map"
     -specs=nano.specs
     -specs=nosys.specs
     "-T${CMAKE_CURRENT_SOURCE_DIR}/linker.ld"
 )
 
-# Include directories
-include_directories(
-    inc
+# Lista explicita: o startup generico e soma.s do template nao entram no firmware.
+add_executable(${PROJECT_NAME}.elf
+    src/main.c
+    src/runtime.c
+    vendor/STM32F4/Source/Templates/system_stm32f4xx.c
+    vendor/STM32F4/Source/Templates/gcc/startup_stm32f411xe.s
 )
 
-# Source files
-file(GLOB_RECURSE SOURCES "src/*.c" "src/*.s" "src/*.S")
-
-# Executable target
-add_executable(${PROJECT_NAME}.elf ${SOURCES})
+target_compile_features(${PROJECT_NAME}.elf PRIVATE c_std_11)
+target_compile_definitions(${PROJECT_NAME}.elf PRIVATE
+    STM32F411xE
+    USER_VECT_TAB_ADDRESS
+)
+target_include_directories(${PROJECT_NAME}.elf SYSTEM PRIVATE
+    vendor/CMSIS/Core/Include
+    vendor/STM32F4/Include
+)
+# Alteracoes no mapa de memoria tambem precisam disparar a linkedicao.
+set_property(TARGET ${PROJECT_NAME}.elf APPEND PROPERTY LINK_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/linker.ld"
+)
 
 # Custom post-build targets to generate .bin, .hex, and print size
 add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD

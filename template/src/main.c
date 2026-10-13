@@ -1,27 +1,33 @@
-#include <stdint.h>
+#include "stm32f4xx.h"
 
-// Protótipo da função implementada em Assembly no arquivo src/soma.s
-extern int32_t soma_assembly(int32_t a, int32_t b);
+/* Comeca em zero: o startup limpa a secao .bss antes de chamar main. */
+volatile uint32_t firmware_iniciado;
 
-void delay(volatile uint32_t count) {
-    while (count--) {
-        __asm__("nop");
+int main(void)
+{
+    /* LED USER em PC13, ativo em nivel baixo. Primeiro mantemos o LED apagado. */
+    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN;
+    (void)RCC->AHB1ENR;
+    GPIOC->BSRR = GPIO_BSRR_BS13;
+    GPIOC->OTYPER &= ~(1U << 13);
+    GPIOC->OSPEEDR &= ~(3U << (13 * 2));
+    GPIOC->PUPDR &= ~(3U << (13 * 2));
+    GPIOC->MODER = (GPIOC->MODER & ~(3U << (13 * 2))) | (1U << (13 * 2));
+
+    /* Confere .bss e .data antes de modificar suas variaveis. */
+    if ((firmware_iniciado != 0U) || (SystemCoreClock != 16000000U)) {
+        while (1) {
+            __NOP(); /* Falha de inicializacao: LED permanece apagado. */
+        }
     }
-}
 
-int main(void) {
-    volatile int32_t x = 15;
-    volatile int32_t y = 25;
-    volatile int32_t resultado = 0;
+    /* O reset usa HSI de 16 MHz. Esta chamada apenas atualiza a variavel CMSIS. */
+    SystemCoreClockUpdate();
+    firmware_iniciado = 1U;
+    GPIOC->BSRR = GPIO_BSRR_BR13; /* LED aceso: startup e main executados. */
 
     while (1) {
-        // Chamada da função em Assembly:
-        // x vai para R0, y vai para R1
-        resultado = soma_assembly(x, y);
-
-        x++;
-        delay(50000);
+        /* A base de tempo e as interrupcoes serao adicionadas depois. */
+        __NOP();
     }
-
-    return 0;
 }
