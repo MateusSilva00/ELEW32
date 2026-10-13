@@ -26,7 +26,10 @@ $testExecutable = Join-Path $testDirectory 'test-morse.exe'
 & $Compiler -std=c11 -Wall -Wextra -Werror `
     -I (Join-Path $projectRoot 'atividade3/questao_c/inc') `
     (Join-Path $projectRoot 'atividade3/questao_c/tests/test_morse.c') `
+    (Join-Path $projectRoot 'atividade3/questao_c/tests/test_morse_integration.c') `
     (Join-Path $projectRoot 'atividade3/questao_c/src/morse_logic.c') `
+    (Join-Path $projectRoot 'atividade3/questao_c/src/morse_control.c') `
+    (Join-Path $projectRoot 'atividade3/questao_c/src/morse_report.c') `
     -o $testExecutable
 if ($LASTEXITCODE -ne 0) { throw 'Falha ao compilar os testes C.' }
 & $testExecutable

@@ -1,8 +1,8 @@
 # Questão (c) — Decodificador Morse
 
-**Em desenvolvimento — etapa 2.** A lógica Morse está implementada e testada
-em C no computador. A integração com EXTI e serial será a etapa 3; na placa,
-o firmware ainda executa a base com LED apagado e mensagem de identificação.
+**Implementada e validada na placa — etapa 3.** A lógica Morse está integrada
+a EXTI0, SysTick, LED e serial. Testes C aprovados e letras conferidas na
+placa (ver [etapa 3](#etapa-3--integração-com-a-placa)).
 
 Conforme o [enunciado](../../Enunciado.pdf), o botão USER permite inserir
 letras em Morse: pressionamento curto representa ponto e longo representa
@@ -77,16 +77,21 @@ Após o sucesso, pressione RESET com BOOT0 solto e abra a serial:
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/serial-monitor.ps1
 ```
 
-O monitor identifica a COM automaticamente e ativa DTR. A saída esperada é:
+O monitor identifica a COM automaticamente e ativa DTR. A saída esperada,
+digitando `.-` e depois `-`, é:
 
 ```text
-Questao (c): decodificador Morse.
-Etapa 1: base pronta; leitura de USER ainda desabilitada.
+Questao (c): Morse A-Z.
+Ponto <300 ms; traco >=300 ms; intervalo entre letras: 1 s.
+Solte USER e digite.
+Morse .- -> A
+Morse - -> T
 ```
 
-O LED de usuário permanece apagado; o de alimentação continua aceso.
-Reabrir o terminal reapresenta a identificação. As mensagens de letras Morse
-só estarão disponíveis após a integração da etapa 3.
+O LED de usuário acende enquanto USER está pressionado (após o debounce).
+Cada letra aparece 1 segundo após a última soltura. Sem terminal aberto com
+DTR, a entrada fica desativada; reabrir o terminal reapresenta a identificação.
+O monitor encerra após 60 s por padrão; use `-Seconds 600` para sessões longas.
 
 ## Validação da etapa 1
 
@@ -104,7 +109,8 @@ A gravação por USB DFU foi concluída e os 13568 bytes lidos de volta têm o
 mesmo SHA-256 do BIN. Após RESET com BOOT0 solto, o usuário confirmou o LED
 de usuário apagado. O monitor reconheceu **COM9**, recebeu as duas linhas
 esperadas com DTR ativo e foi fechado normalmente após 5 segundos.
-A [captura da etapa 1](docs/evidencias/etapa-1-serial.txt) foi preservada.
+A [captura da etapa 1](docs/evidencias/etapa-1-serial.txt) foi preservada,
+com as mensagens de identificação da base daquela etapa.
 
 Não houve medição instrumental do clock nem inspeção do contador por depurador.
 Na etapa 1 ainda não havia decodificação para testar.
@@ -136,3 +142,49 @@ O ARM GCC compilou o módulo sem avisos. Ele ainda não é chamado pelo `main`,
 portanto o linker remove o código não utilizado. O BIN é idêntico à leitura
 da Flash da etapa 1, com o mesmo SHA-256 e tamanho. Não houve nova gravação
 ou teste físico nesta etapa; USER ainda não insere Morse na placa.
+
+## Etapa 3 — Integração com a placa
+
+O [guia da integração](docs/integracao.md) descreve EXTI0, SysTick, debounce,
+fila de resultados, LED, mensagens e política de sessão USB. Os testes de
+debounce, fila e envio foram acrescentados a `scripts/test-morse.ps1` e à
+tarefa **Questao (c): Morse Tests**.
+
+Compilação limpa sem avisos: **15672 bytes de Flash** e **3348 bytes de RAM
+estática**, além da pilha em execução. SHA-256 do BIN:
+
+```text
+36471C6D3BE67C437DD12189B57CEF46385FBB1EBACE6CF73E90CF623F1AF9CD
+```
+
+Os testes C passaram: 29/30 ms, boot com USER pressionado, bouncing, pressão
+mantida, borda pendente em 999/1000 ms, wrap, formatos, USB ocupado/abortado,
+troca de sessão, fila cheia e 1000 ciclos. Consulte a
+[saída dos testes](docs/evidencias/etapa-3-testes-c.txt).
+
+Em 13/10/2026, a gravação DFU foi verificada: os 15672 bytes lidos de volta
+têm o mesmo SHA-256 do BIN. A captura da COM9 está nas
+[evidências da placa](docs/evidencias/etapa-3-placa.txt). As ações no botão e
+a observação do LED foram informadas pelo usuário.
+
+| Teste físico | Resultado |
+| --- | --- |
+| Identificação ao abrir o terminal | Três linhas de identificação recebidas |
+| LED durante a pressão | Usuário confirmou que acende a cada pressão |
+| Toque rápido | `Morse . -> E` |
+| Pressão longa | `Morse - -> T` |
+| `.-` | `Morse .- -> A` |
+| `...` e `---` separados por 2 s | `S`, `O`/`M` conforme o agrupamento dos traços (ver abaixo) |
+| USER mantido por ~5 s | Um único `T` |
+| `----` com pausas curtas | `Morse ---- -> sequencia invalida` (duas vezes) |
+| Cinco ou mais toques curtos | `Morse (prefixo): .... -> mais de 4 simbolos` |
+
+Nas primeiras tentativas, alguns grupos de traços se dividiram (`--` + `-`,
+`---` + `-`) e outros se uniram (`---` com `...`). Isso corresponde à regra do
+enunciado: uma pausa solta de 1 s ou mais encerra a letra. Com pausas curtas
+entre os traços, `----` foi reconhecido como um único grupo. Os tempos de
+pressão e pausa não foram medidos, então essa explicação é inferida.
+
+Não houve osciloscópio nem injeção física de bouncing. Debounce, borda
+pendente no limite de 1 s, wrap, USB ocupado/abortado e fila cheia foram
+verificados nos testes C.

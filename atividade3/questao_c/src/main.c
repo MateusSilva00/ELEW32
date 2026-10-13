@@ -2,6 +2,8 @@
 #include "clock.h"
 #include "timebase.h"
 #include "usb_serial.h"
+#include "morse_board.h"
+#include "morse_report.h"
 
 /* O startup limpa .bss antes de chamar main. */
 volatile uint32_t firmware_iniciado;
@@ -9,7 +11,7 @@ volatile uint32_t firmware_iniciado;
 int main(void)
 {
     /* PC13 e ativo em nivel baixo. Prepara a saida sem acender o LED.
-     * Nesta base da questao (c), o LED permanece apagado. */
+     * Durante a entrada Morse, ele acompanhara a pressao validada. */
     RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN;
     (void)RCC->AHB1ENR;
     GPIOC->BSRR = GPIO_BSRR_BS13;
@@ -28,11 +30,13 @@ int main(void)
             __NOP(); /* Falha de inicializacao: nao anuncia prontidao. */
         }
     }
+    morse_board_init();
     firmware_iniciado = 1U;
 
     while (1) {
         /* Toda formatacao/transmissao ocorre no main, sem bloquear ISRs. */
         usb_serial_poll();
+        morse_report_poll();
         __WFI();
     }
 }

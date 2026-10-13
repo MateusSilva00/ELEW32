@@ -1,0 +1,34 @@
+Questao (c), etapa 3 - 13/10/2026
+Captura real da COM9 feita pelo assistente; acoes no botao e observacao do LED informadas pelo usuario.
+Gravacao DFU verificada: BIN e leitura de volta com 15672 bytes e SHA256
+36471C6D3BE67C437DD12189B57CEF46385FBB1EBACE6CF73E90CF623F1AF9CD.
+Usuario confirmou: LED de usuario acende durante cada pressao.
+
+Roteiro em tres rodadas (ver README, etapa 3). Rodada 1: T T A S (prefixo ---.) T O T (prefixo ....).
+Rodada 2: toque rapido -> E; S, M+T, S com pausas de 2 s; ---- dividido em O+T.
+Rodada 3: tracos com pausa solta curta -> dois grupos ---- (sequencia invalida).
+Divisoes/unioes correspondem a pausa solta maior/menor que 1 s, conforme a regra do enunciado.
+Nao ha medicao dos tempos de pressao/pausa; essa causa e inferida, nao medida.
+
+Monitor em COM9, 115200 8N1, DTR ativo. Duracao: 600 segundos; Ctrl+C encerra.
+Questao (c): Morse A-Z.
+Ponto <300 ms; traco >=300 ms; intervalo entre letras: 1 s.
+Solte USER e digite.
+Morse - -> T
+Morse - -> T
+Morse .- -> A
+Morse ... -> S
+Morse (prefixo): ---. -> mais de 4 simbolos
+Morse - -> T
+Morse --- -> O
+Morse - -> T
+Morse (prefixo): .... -> mais de 4 simbolos
+Morse . -> E
+Morse ... -> S
+Morse -- -> M
+Morse - -> T
+Morse ... -> S
+Morse --- -> O
+Morse - -> T
+Morse ---- -> sequencia invalida
+Morse ---- -> sequencia invalida

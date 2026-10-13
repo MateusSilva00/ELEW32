@@ -185,8 +185,9 @@ uint32_t usb_serial_session(void)
 void usb_serial_poll(void)
 {
     static const char greeting[] =
-        "Questao (c): decodificador Morse.\r\n"
-        "Etapa 1: base pronta; leitura de USER ainda desabilitada.\r\n";
+        "Questao (c): Morse A-Z.\r\n"
+        "Ponto <300 ms; traco >=300 ms; intervalo entre letras: 1 s.\r\n"
+        "Solte USER e digite.\r\n";
     uint32_t enabled = lock_usb();
     if (greeting_pending && write_locked(greeting, sizeof(greeting) - 1U)) {
         greeting_pending = false;

@@ -1,6 +1,7 @@
 #include "timebase.h"
 #include "stm32f4xx.h"
 #include "stm32f4xx_hal.h"
+#include "morse_board.h"
 
 /* Compartilhado entre ISR e main; leitura alinhada de 32 bits e atomica no M4. */
 static volatile uint32_t milliseconds;
@@ -15,7 +16,7 @@ bool timebase_init(void)
     if (SysTick_Config(SystemCoreClock / 1000U) != 0U) {
         return false;
     }
-    /* ISR curta com prioridade alta; nao realiza trabalho de perifericos. */
+    /* ISR curta: debounce/tempo/LED; sem formatacao ou envio USB. */
     NVIC_SetPriority(SysTick_IRQn, 0U);
     return true;
 }
@@ -42,4 +43,5 @@ HAL_StatusTypeDef HAL_InitTick(uint32_t priority)
 void SysTick_Handler(void)
 {
     ++milliseconds;
+    morse_board_tick(milliseconds);
 }

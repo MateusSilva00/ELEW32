@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "morse_logic.h"
+void test_morse_integration(void);
 
 static uint32_t symbol(morse_logic_t *state, uint32_t at, uint32_t duration)
 {
@@ -171,5 +172,6 @@ int main(void)
     puts("PASS: sequencia invalida, 10000 simbolos sem overflow de memoria e recuperacao");
     test_wrap_reset();
     puts("PASS: wrap uint32_t na duracao/intervalo e cancelamento por reinicializacao");
+    test_morse_integration();
     return 0;
 }

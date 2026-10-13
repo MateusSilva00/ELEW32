@@ -6,6 +6,9 @@ include(../../plataforma/stm32f411/firmware.cmake)
 stm32f411_add_firmware(${PROJECT_NAME}
     src/main.c
     src/morse_logic.c
+    src/morse_control.c
+    src/morse_board.c
+    src/morse_report.c
     src/clock.c
     src/timebase.c
     src/runtime.c

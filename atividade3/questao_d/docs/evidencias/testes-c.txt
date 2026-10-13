@@ -1,0 +1,22 @@
+Questao (d) - 13/10/2026
+Comando: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-rhythm.ps1
+Compilador nativo: Tiny C Compiler 0.9.27, -std=c11 -Wall -Wextra -Werror.
+Logica, debounce, fila e relatorio reais; tempo, placa e transporte USB simulados.
+
+PASS: 20000 sementes com 3 trechos curtos e longos, variaveis e reproduziveis
+PASS: LED da demonstracao 300/900 ms, batidas de 100 ms e cliques ignorados
+PASS: limiar 599/600 ms, intervalo 1999 ms e tentativa correta/incorreta
+PASS: tentativa incorreta mostra todos os intervalos antes do resultado
+PASS: prazo 1999/2000 ms, um unico evento e clique atrasado sem intervalo
+PASS: niveis 3 a 12 mantendo o prefixo, repeticao apos erro e reinicio
+PASS: wrap uint32_t na demonstracao, nos intervalos e no prazo
+PASS: debounce 29/30 ms, boot pressionado, bouncing e LED de demonstracao/clique
+PASS: pressao pendente em 1999/2000 ms e prazo detectado pelo SysTick
+PASS: anuncio, intervalos, resultado, pausa de 1,5 s, USB ocupado/abortado
+      maior linha transmitida: 96 de 128 bytes
+PASS: troca de sessao, nivel maximo e linhas dentro do buffer USB
+
+ARM GNU 14.2.1: compilacao limpa sem avisos.
+Flash 16528 bytes; RAM estatica 3308 bytes.
+SHA256 do BIN: 8CC64008EDC049E8C764A556C087053A2F696CF1D0FFB579892AB602615EBE98
+Gravacao e teste fisico: pendentes nesta captura.

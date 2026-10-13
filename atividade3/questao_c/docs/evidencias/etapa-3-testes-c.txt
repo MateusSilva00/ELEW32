@@ -1,0 +1,19 @@
+Questao (c), etapa 3 - 13/10/2026
+Comando: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-morse.ps1
+Compilador nativo: Tiny C Compiler 0.9.27, -std=c11 -Wall -Wextra -Werror.
+Logica, debounce, fila e relatorio reais; tempo, placa e transporte USB simulados.
+
+PASS: 26 letras A-Z, sequencias preservadas e um resultado por letra
+PASS: limiar 299/300/301 ms, botao mantido e bordas duplicadas
+PASS: intervalo 999/1000/1001 ms, letras sucessivas e atendimento tardio
+PASS: sequencia invalida, 10000 simbolos sem overflow de memoria e recuperacao
+PASS: wrap uint32_t na duracao/intervalo e cancelamento por reinicializacao
+PASS: debounce 29/30 ms, boot pressionado, bouncing e duracao preservada
+PASS: borda pendente em 999/1000 ms, pulso rejeitado e wrap com debounce
+PASS: formato de letras/erros, USB ocupado/abortado e troca de sessao
+PASS: FIFO de 16, perdas durante aviso e 1000 ciclos de reutilizacao
+
+ARM GNU 14.2.1: compilacao limpa sem avisos.
+Flash 15672 bytes; RAM estatica 3348 bytes.
+SHA256 do BIN: 36471C6D3BE67C437DD12189B57CEF46385FBB1EBACE6CF73E90CF623F1AF9CD
+Gravacao e teste fisico: pendentes nesta captura.

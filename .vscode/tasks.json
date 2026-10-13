@@ -2,6 +2,13 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Questao (d): Rhythm Tests",
+            "type": "process",
+            "command": "powershell",
+            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/test-rhythm.ps1"],
+            "problemMatcher": []
+        },
+        {
             "label": "Questao (c): Morse Tests",
             "type": "process",
             "command": "powershell",
@@ -146,7 +153,7 @@
         {
             "id": "question",
             "type": "pickString",
-            "description": "Questao da Atividade 3 (d ainda pendente)",
+            "description": "Questao da Atividade 3",
             "options": [
                 "a",
                 "b",
